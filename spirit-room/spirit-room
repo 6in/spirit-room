@@ -1,0 +1,161 @@
+#!/bin/bash
+# spirit-room - フォルダを精神と時の部屋として起動するCLI
+#
+# インストール:
+#   sudo cp spirit-room /usr/local/bin/spirit-room
+#   sudo chmod +x /usr/local/bin/spirit-room
+
+set -e
+
+BASE_IMAGE="spirit-room-base:latest"
+AUTH_VOLUME="spirit-room-auth"        # 認証情報共有ボリューム（全部屋で使い回す）
+OPENCODE_AUTH_VOLUME="spirit-room-opencode-auth"
+
+usage() {
+    cat << EOF
+使い方:
+  spirit-room open   [フォルダ]     部屋を開く（省略時はカレント）
+  spirit-room enter  [フォルダ]     部屋に入る（SSH + tmux attach）
+  spirit-room list                   起動中の部屋一覧
+  spirit-room close  [フォルダ]     部屋を閉じる
+  spirit-room logs   [フォルダ]     修行ログを見る
+  spirit-room auth                   認証（初回のみ）
+
+例:
+  cd ~/projects/langgraph-poc && spirit-room open
+  spirit-room open ~/projects/mastra-trial
+  spirit-room enter ~/projects/langgraph-poc
+  spirit-room list
+EOF
+    exit 1
+}
+
+# ── フォルダパス → コンテナ名 ────────────────────────────────
+folder_to_name() {
+    local folder="${1:-$(pwd)}"
+    folder=$(realpath "$folder")
+    echo "spirit-room-$(basename $folder)" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g'
+}
+
+# ── 使用可能なSSHポートを探す ────────────────────────────────
+find_free_port() {
+    local port=2222
+    while docker ps --format '{{.Ports}}' | grep -q ":${port}->"; do
+        port=$((port + 1))
+    done
+    echo $port
+}
+
+# ── コマンド: open ───────────────────────────────────────────
+cmd_open() {
+    local folder="${1:-$(pwd)}"
+    folder=$(realpath "$folder")
+    local name=$(folder_to_name "$folder")
+    local port=$(find_free_port)
+
+    if docker ps --format '{{.Names}}' | grep -q "^${name}$"; then
+        echo "[INFO] 部屋 '$name' はすでに起動中です"
+        echo "[INFO] 入室: spirit-room enter $folder"
+        return
+    fi
+
+    echo "
+╔══════════════════════════════════════════════╗
+║  部屋を開く                                  ║
+║  フォルダ : $folder
+║  コンテナ : $name
+║  SSHポート: $port
+╚══════════════════════════════════════════════╝
+"
+
+    # 認証ボリュームを先に作成（なければ）
+    docker volume create "$AUTH_VOLUME"         > /dev/null 2>&1 || true
+    docker volume create "$OPENCODE_AUTH_VOLUME" > /dev/null 2>&1 || true
+
+    docker run -d \
+        --name "$name" \
+        --hostname "$name" \
+        -e ROOM_NAME="$(basename $folder)" \
+        -p "${port}:22" \
+        -v "${folder}:/workspace" \
+        -v "${AUTH_VOLUME}:/root/.claude" \
+        -v "${OPENCODE_AUTH_VOLUME}:/root/.config/opencode" \
+        "$BASE_IMAGE"
+
+    echo "[INFO] 部屋を開きました"
+    echo ""
+    echo "  入室 : spirit-room enter $folder"
+    echo "  または: ssh root@localhost -p $port  (パス: spiritroom)"
+    echo "  確認 : spirit-room list"
+}
+
+# ── コマンド: enter ──────────────────────────────────────────
+cmd_enter() {
+    local folder="${1:-$(pwd)}"
+    folder=$(realpath "$folder")
+    local name=$(folder_to_name "$folder")
+
+    if ! docker ps --format '{{.Names}}' | grep -q "^${name}$"; then
+        echo "[ERROR] 部屋 '$name' は起動していません"
+        echo "  起動: spirit-room open $folder"
+        exit 1
+    fi
+
+    local port=$(docker port "$name" 22 | cut -d: -f2)
+    echo "[INFO] 部屋[$name] に入室 (SSH port: $port)"
+    ssh -o StrictHostKeyChecking=no \
+        -o UserKnownHostsFile=/dev/null \
+        -t root@localhost -p "$port" \
+        "tmux attach -t spirit-room || tmux new-session -s spirit-room"
+}
+
+# ── コマンド: list ───────────────────────────────────────────
+cmd_list() {
+    echo "起動中の部屋:"
+    docker ps \
+        --filter "name=spirit-room-" \
+        --format "  {{.Names}}\t{{.Status}}\tSSH→{{.Ports}}" \
+        | column -t
+}
+
+# ── コマンド: close ──────────────────────────────────────────
+cmd_close() {
+    local folder="${1:-$(pwd)}"
+    folder=$(realpath "$folder")
+    local name=$(folder_to_name "$folder")
+
+    echo "[INFO] 部屋 '$name' を閉じます..."
+    docker stop "$name" && docker rm "$name"
+    echo "[INFO] 完了（workspaceのファイルはフォルダに残っています）"
+}
+
+# ── コマンド: logs ───────────────────────────────────────────
+cmd_logs() {
+    local folder="${1:-$(pwd)}"
+    folder=$(realpath "$folder")
+    echo "[INFO] ログ: $folder/.logs/progress.log"
+    tail -f "$folder/.logs/progress.log" 2>/dev/null || echo "ログなし（まだ修行が始まっていません）"
+}
+
+# ── コマンド: auth ───────────────────────────────────────────
+cmd_auth() {
+    echo "[INFO] 一時コンテナで認証を実行します..."
+    docker volume create "$AUTH_VOLUME" > /dev/null 2>&1 || true
+    docker run -it --rm \
+        -v "${AUTH_VOLUME}:/root/.claude" \
+        "$BASE_IMAGE" \
+        bash -c "service ssh start > /dev/null; claude auth login"
+    echo "[INFO] 認証情報をボリューム '$AUTH_VOLUME' に保存しました"
+    echo "[INFO] 以降の全部屋でこの認証が使われます"
+}
+
+# ── メイン ───────────────────────────────────────────────────
+case "${1:-}" in
+    open)   cmd_open  "${2:-}" ;;
+    enter)  cmd_enter "${2:-}" ;;
+    list)   cmd_list ;;
+    close)  cmd_close "${2:-}" ;;
+    logs)   cmd_logs  "${2:-}" ;;
+    auth)   cmd_auth ;;
+    *)      usage ;;
+esac
