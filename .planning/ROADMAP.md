@@ -28,7 +28,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Redis is running inside the container after `spirit-room open` (no manual start needed)
   4. tmux session shows three panes: training, logs, workspace
   5. `spirit-room enter [folder]` attaches to the tmux session
-**Plans**: TBD
+**Plans**: 2 plans
+  - [ ] 01-01-PLAN.md — Fix Dockerfile/CLI bugs and build spirit-room-base image (Wave 1)
+  - [ ] 01-02-PLAN.md — Verify container runtime: open, SSH, Redis, tmux, enter (Wave 2)
 
 ### Phase 2: Auth & Training Loop
 **Goal**: Claude Code can authenticate inside a container and `start-training.sh` drives the full PHASE1 → PHASE2 loop to completion
@@ -40,7 +42,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. `start-training.sh` runs PHASE1, installs deps, and creates the `.prepared` flag
   4. `start-training.sh` runs PHASE2, executes the MISSION, and creates the `.done` flag
   5. Restarting a container that has `.prepared` resumes at PHASE2 (does not repeat PHASE1)
-**Plans**: TBD
+**Plans**: 3 plans
+  - [ ] 02-01-PLAN.md — Fix run_claude --dangerously-skip-permissions and rebuild base image (Wave 1)
+  - [ ] 02-02-PLAN.md — Verify spirit-room auth and shared auth volume across rooms (Wave 2)
+  - [ ] 02-03-PLAN.md — Verify full PHASE1->PHASE2 training loop and resume behavior (Wave 3)
 
 ### Phase 3: End-to-End Flow
 **Goal**: A user can tell Mr. Popo a framework name and purpose and Claude Code autonomously delivers a working POC without manual intervention
