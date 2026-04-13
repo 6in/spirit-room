@@ -7,7 +7,7 @@ ENV NODE_VERSION=20
 
 # ── レイヤー1: 基本パッケージ ────────────────────────────────
 RUN apt-get update && apt-get install -y \
-    curl wget git vim nano \
+    curl wget git vim nano unzip \
     openssh-server tmux \
     python3 python3-pip python3-venv \
     build-essential \
