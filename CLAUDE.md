@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 応答言語
+
+**日本語で応答すること。** ユーザーへのすべての返答は日本語で行う。コード、コマンド、ファイルパスはそのまま英語で記載してよい。
+
 ## Project Overview
 
 **精神と時の部屋 (Spirit Room)** — a Docker-based AI training sandbox inspired by Dragon Ball Z. It lets AI agents (Claude Code or opencode) autonomously implement framework POCs inside isolated containers, without manual setup. Users work with "Mr. Popo" (an AI hiring manager in `spirit-room-manager/`) to define a learning mission, which launches a Docker room where the agent runs a 2-phase training loop.
@@ -356,6 +360,22 @@ DockerコンテナをAI修行の場として使い、AIエージェント（Clau
 
 No project skills found. Add skills to any of: `.claude/skills/`, `.agents/skills/`, `.cursor/skills/`, or `.github/skills/` with a `SKILL.md` index file.
 <!-- GSD:skills-end -->
+
+## Git ブランチ戦略
+
+**フェーズ実行・TODO・QUICK タスクは必ずブランチを作成して作業すること。**
+
+- 作業開始時に `git checkout -b <branch-name>` でブランチを作成する
+  - フェーズ作業: `phase/01-infrastructure` のような名前
+  - TODO/QUICK: `fix/xxx` や `chore/xxx` のような名前
+- ブランチ上ではこまめにコミットしてよい
+- main へマージするときは **squash merge** で細かいコミットを1つにまとめる:
+  ```bash
+  git checkout main
+  git merge --squash <branch-name>
+  git commit -m "feat(phase-01): ..."
+  git branch -d <branch-name>
+  ```
 
 <!-- GSD:workflow-start source:GSD defaults -->
 ## GSD Workflow Enforcement
