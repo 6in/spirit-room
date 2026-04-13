@@ -1,0 +1,23 @@
+# ワークスペース (spirit-room open で作成されるプロジェクトフォルダ)
+spirit-room/workspace/
+
+# Docker / ビルド成果物
+*.tar
+*.tar.gz
+
+# OS
+.DS_Store
+Thumbs.db
+
+# エディタ
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ログ
+*.log
+
+# 環境変数
+.env
+.env.*
