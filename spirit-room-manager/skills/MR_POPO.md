@@ -107,10 +107,6 @@ spirit-room list
   フォルダ : ~/projects/[名前]
   コンテナ : spirit-room-[名前]
 
-入室して修行を開始するには:
-  spirit-room enter ~/projects/[名前]
-  → start-training
-
-モニタリング:
-  spirit-room monitor open
+修行の状況確認:
+  spirit-room logs ~/projects/[名前]
 ```

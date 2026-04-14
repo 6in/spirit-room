@@ -28,6 +28,6 @@ spirit-room monitor open       # ブラウザでモニタリングを開く
 
 ~/projects/ 配下に部屋を作ります。
 
-## スキル
+## 手順書
 
-skills/MR_POPO.md
+起動したら `skills/MR_POPO.md` を Read ツールで読み込み、ヒアリング手順に従って動くこと。

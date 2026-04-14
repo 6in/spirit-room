@@ -44,5 +44,17 @@
 ---
 
 ## 追加ツールのインストール
-必要であれば `npm install -g <package>` や `pip install <package>` で追加できる。
-インストールしたものはcatalog.mdへの追記を推奨。
+必要であれば以下でインストールできる。インストールしたものはcatalog.mdへの追記を推奨。
+
+```bash
+# Node.js パッケージ
+npm install -g <package>
+
+# Python パッケージ（Ubuntu 24.04 では --break-system-packages が必要）
+pip3 install <package> --break-system-packages
+
+# または venv を使う場合
+python3 -m venv /workspace/.venv
+source /workspace/.venv/bin/activate
+pip install <package>
+```

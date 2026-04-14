@@ -39,8 +39,12 @@ SESSION="spirit-room"
 tmux new-session -d -s "$SESSION" -x 220 -y 50
 
 tmux rename-window -t "$SESSION:0" "training"
-tmux send-keys -t "$SESSION:training" \
-    "echo '部屋[$ROOM_NAME] 準備完了 | start-training で修行開始 | status で確認'" C-m
+if [ -f /workspace/MISSION.md ] && [ ! -f /workspace/.done ]; then
+    tmux send-keys -t "$SESSION:training" "start-training" C-m
+else
+    tmux send-keys -t "$SESSION:training" \
+        "echo '部屋[$ROOM_NAME] 準備完了 | start-training で修行開始 | status で確認'" C-m
+fi
 
 tmux new-window -t "$SESSION" -n "logs"
 tmux send-keys -t "$SESSION:logs" \
