@@ -25,7 +25,7 @@ run_claude() {
     local prompt="$1"
     case "$ENGINE" in
         claude)
-            claude \
+            CLAUDE_CODE_BUBBLEWRAP=1 claude \
                 --dangerously-skip-permissions \
                 --allowedTools "Bash,Read,Write,Edit,Glob,Grep" \
                 -p "$prompt" \
