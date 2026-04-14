@@ -142,9 +142,10 @@ cmd_auth() {
     echo "[INFO] 一時コンテナで認証を実行します..."
     docker volume create "$AUTH_VOLUME" > /dev/null 2>&1 || true
     docker run -it --rm \
+        --entrypoint bash \
         -v "${AUTH_VOLUME}:/root/.claude" \
         "$BASE_IMAGE" \
-        bash -c "service ssh start > /dev/null; claude auth login"
+        -c "claude auth login"
     echo "[INFO] 認証情報をボリューム '$AUTH_VOLUME' に保存しました"
     echo "[INFO] 以降の全部屋でこの認証が使われます"
 }
