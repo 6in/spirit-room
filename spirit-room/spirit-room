@@ -140,25 +140,37 @@ cmd_logs() {
 
 # ── コマンド: auth ───────────────────────────────────────────
 cmd_auth() {
-    echo "[INFO] 認証コンテナを起動します..."
+    local creds="${HOME}/.claude/.credentials.json"
     docker volume create "$AUTH_VOLUME" > /dev/null 2>&1 || true
-    local cname="spirit-room-auth-temp"
-    docker rm -f "$cname" > /dev/null 2>&1 || true
-    docker run -d --name "$cname" \
-        -p 2299:22 \
-        -v "${AUTH_VOLUME}:/root/.claude" \
-        "$BASE_IMAGE" > /dev/null
-    sleep 2
-    echo "[INFO] SSH で認証セッションを開始します..."
-    ssh -t root@localhost -p 2299 \
-        -o StrictHostKeyChecking=no \
-        -o UserKnownHostsFile=/dev/null \
-        -o LogLevel=ERROR \
-        'claude auth login'
-    docker stop "$cname" > /dev/null 2>&1 || true
-    docker rm "$cname" > /dev/null 2>&1 || true
-    echo "[INFO] 認証情報をボリューム '$AUTH_VOLUME' に保存しました"
-    echo "[INFO] 以降の全部屋でこの認証が使われます"
+
+    if [ -f "$creds" ]; then
+        # ホストに認証済みの場合: credentials をボリュームにコピー
+        echo "[INFO] ホストの認証情報をボリュームにコピーします..."
+        docker run --rm \
+            -v "${AUTH_VOLUME}:/root/.claude" \
+            -v "${creds}:/src/.credentials.json:ro" \
+            --entrypoint /bin/bash \
+            "$BASE_IMAGE" \
+            -c "cp /src/.credentials.json /root/.claude/.credentials.json"
+        echo "[INFO] 認証情報をボリューム '$AUTH_VOLUME' に保存しました"
+        echo "[INFO] 以降の全部屋でこの認証が使われます"
+    else
+        # ホスト未認証の場合: 手順を案内
+        echo ""
+        echo "╔══════════════════════════════════════════════╗"
+        echo "║  初回認証が必要です                         ║"
+        echo "╚══════════════════════════════════════════════╝"
+        echo ""
+        echo "ホスト側で claude auth login を実行してください:"
+        echo ""
+        echo "  1. 別ターミナルで: claude auth login"
+        echo "  2. 表示された URL をブラウザで開く"
+        echo "  3. 認証コードをターミナルに貼り付ける"
+        echo "  4. 完了後、再度このコマンドを実行: spirit-room auth"
+        echo ""
+        echo "[ERROR] ホストに認証情報が見つかりません: $creds"
+        exit 1
+    fi
 }
 
 # ── メイン ───────────────────────────────────────────────────
