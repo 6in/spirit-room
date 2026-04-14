@@ -1,5 +1,12 @@
 # MISSION: [フレームワーク名] POC
 
+## 修行フェーズ
+この部屋は 4 フェーズで修行が進む:
+1. **PHASE 0 (RESEARCH)**: 対象フレームワークを調査し `/workspace/RESEARCH.md` を作成
+2. **PHASE 1 (PREPARE)**: RESEARCH.md に従って依存をインストール
+3. **PHASE 2 (TRAINING)**: RESEARCH.md と MISSION.md に従って POC を実装。途中経過は `/workspace/.journal.md` に追記
+4. **PHASE 3 (REPORT)**: 別セッションが .journal.md と git log を読んで振り返りレポート `/workspace/REPORT.md` を執筆
+
 ## 目的
 [何を実装するか、一言で]
 
@@ -15,11 +22,14 @@
 
 ## 完了条件（これを全て満たすまで繰り返せ）
 
+- [ ] `/workspace/RESEARCH.md` が存在する（PHASE 0 の調査レポート）
+- [ ] `/workspace/.journal.md` が存在し、[TRY]/[DONE] エントリが 1件以上ある（PHASE 2 の作業ログ）
 - [ ] `cd /workspace && python3 test_exit.py` が exit code 0 で終了する
 - [ ] `/workspace/README.md` に以下が書かれている
   - 実装の概要
   - 学んだこと・ハマったこと
   - 応用可能なユースケース
+- [ ] `/workspace/REPORT.md` が存在する（PHASE 3 の振り返りレポート）
 
 ---
 

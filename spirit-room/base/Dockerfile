@@ -7,15 +7,32 @@ ENV NODE_VERSION=20
 
 # ── レイヤー1: 基本パッケージ ────────────────────────────────
 RUN apt-get update && apt-get install -y \
-    curl wget git vim nano unzip \
+    curl wget git vim nano unzip less \
     openssh-server tmux \
-    python3 python3-pip python3-venv \
+    python3 python3-pip python3-venv pipx \
     build-essential \
     ca-certificates gnupg \
     jq tree \
     sqlite3 libsqlite3-dev \
     redis-server \
-    && rm -rf /var/lib/apt/lists/*
+    ripgrep fd-find fzf bat \
+    httpie shellcheck \
+    htop ncdu lsof \
+    dnsutils iputils-ping netcat-openbsd \
+    xz-utils zip p7zip-full \
+    git-delta \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/fdfind /usr/local/bin/fd \
+    && ln -sf /usr/bin/batcat /usr/local/bin/bat
+
+# ── レイヤー1.5: 追加ツール（apt にないもの） ────────────────
+# yq (Go版): apt に古いPython版があるため公式バイナリで導入
+RUN curl -fsSL https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 \
+    -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
+
+# uv (Astral社の高速 Python パッケージマネージャー)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
+    && mv /root/.local/bin/uv /usr/local/bin/uv 2>/dev/null || true
 
 # ── レイヤー2: Node.js ───────────────────────────────────────
 RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - \
@@ -38,6 +55,14 @@ RUN mkdir /var/run/sshd \
     && echo "PermitRootLogin yes" >> /etc/ssh/sshd_config \
     && echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
 
+# ── Git 設定 ─────────────────────────────────────────────────
+# /workspace はホストからマウントされるため所有権が root と一致しない。
+# git の dubious ownership エラーを回避するため全ディレクトリを safe に設定。
+RUN git config --global --add safe.directory '*' \
+    && git config --global user.email 'spirit-room@localhost' \
+    && git config --global user.name 'Spirit Room' \
+    && git config --global init.defaultBranch main
+
 # ── スクリプト・デフォルトcatalogをイメージに焼き込む ─────────
 # /workspace はマウントポイント、/room は部屋の共有リソース
 RUN mkdir -p /workspace /room /logs
@@ -45,6 +70,8 @@ RUN mkdir -p /workspace /room /logs
 COPY entrypoint.sh          /entrypoint.sh
 COPY scripts/               /room/scripts/
 COPY catalog.md             /room/catalog.md
+COPY CLAUDE.md              /room/CLAUDE.md
+COPY skills/                /room/skills/
 
 RUN chmod +x /entrypoint.sh /room/scripts/*.sh \
     && ln -s /room/scripts/start-training.sh /usr/local/bin/start-training \
