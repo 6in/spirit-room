@@ -140,20 +140,23 @@ cmd_logs() {
 
 # ── コマンド: auth ───────────────────────────────────────────
 cmd_auth() {
-    echo "[INFO] ホストの Claude Code 認証情報をボリュームにコピーします..."
-    local creds="${HOME}/.claude/.credentials.json"
-    if [ ! -f "$creds" ]; then
-        echo "[ERROR] ホストに認証情報が見つかりません: $creds"
-        echo "[ERROR] まずホスト側で 'claude auth login' を実行してください"
-        exit 1
-    fi
+    echo "[INFO] 認証コンテナを起動します..."
     docker volume create "$AUTH_VOLUME" > /dev/null 2>&1 || true
-    docker run --rm \
+    local cname="spirit-room-auth-temp"
+    docker rm -f "$cname" > /dev/null 2>&1 || true
+    docker run -d --name "$cname" \
+        -p 2299:22 \
         -v "${AUTH_VOLUME}:/root/.claude" \
-        -v "${creds}:/src/.credentials.json:ro" \
-        --entrypoint /bin/bash \
-        "$BASE_IMAGE" \
-        -c "cp /src/.credentials.json /root/.claude/.credentials.json && echo '[INFO] コピー完了'"
+        "$BASE_IMAGE" > /dev/null
+    sleep 2
+    echo "[INFO] SSH で認証セッションを開始します..."
+    ssh -t root@localhost -p 2299 \
+        -o StrictHostKeyChecking=no \
+        -o UserKnownHostsFile=/dev/null \
+        -o LogLevel=ERROR \
+        'claude auth login'
+    docker stop "$cname" > /dev/null 2>&1 || true
+    docker rm "$cname" > /dev/null 2>&1 || true
     echo "[INFO] 認証情報をボリューム '$AUTH_VOLUME' に保存しました"
     echo "[INFO] 以降の全部屋でこの認証が使われます"
 }
