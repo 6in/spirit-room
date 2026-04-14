@@ -45,7 +45,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
   - [x] 02-01-PLAN.md — Fix run_claude --dangerously-skip-permissions and rebuild base image (Wave 1)
   - [x] 02-02-PLAN.md — Verify spirit-room auth and shared auth volume across rooms (Wave 2)
-  - [ ] 02-03-PLAN.md — Verify full PHASE1->PHASE2 training loop and resume behavior (Wave 3)
+  - [x] 02-03-PLAN.md — Verify full PHASE1->PHASE2 training loop and resume behavior (Wave 3)
 
 ### Phase 3: End-to-End Flow
 **Goal**: A user can tell Mr. Popo a framework name and purpose and Claude Code autonomously delivers a working POC without manual intervention

@@ -24,9 +24,9 @@
 
 ### Training Loop
 
-- [ ] **LOOP-01**: `start-training.sh` がPHASE1を実行し、依存パッケージをインストールして `.prepared` フラグを作成する
-- [ ] **LOOP-02**: `start-training.sh` がPHASE2を実行し、MISSION.mdの実装完了後に `.done` フラグを作成する
-- [ ] **LOOP-03**: コンテナ再起動後に `.prepared`/`.done` フラグを検出してフェーズをスキップし、正しいフェーズからレジュームする
+- [x] **LOOP-01**: `start-training.sh` がPHASE1を実行し、依存パッケージをインストールして `.prepared` フラグを作成する
+- [x] **LOOP-02**: `start-training.sh` がPHASE2を実行し、MISSION.mdの実装完了後に `.done` フラグを作成する
+- [x] **LOOP-03**: コンテナ再起動後に `.prepared`/`.done` フラグを検出してフェーズをスキップし、正しいフェーズからレジュームする
 - [x] **LOOP-04**: `claude -p` のフラグ構文が現行バージョンで正常動作する
 
 ### End-to-End
@@ -74,9 +74,9 @@
 | RUN-04 | Phase 1 | Pending |
 | AUTH-01 | Phase 2 | Complete |
 | AUTH-02 | Phase 2 | Complete |
-| LOOP-01 | Phase 2 | Pending |
-| LOOP-02 | Phase 2 | Pending |
-| LOOP-03 | Phase 2 | Pending |
+| LOOP-01 | Phase 2 | Complete |
+| LOOP-02 | Phase 2 | Complete |
+| LOOP-03 | Phase 2 | Complete |
 | LOOP-04 | Phase 2 | Complete |
 | E2E-01 | Phase 3 | Pending |
 | E2E-02 | Phase 3 | Pending |
