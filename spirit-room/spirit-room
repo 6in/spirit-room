@@ -80,6 +80,7 @@ cmd_open() {
         -v "${folder}:/workspace" \
         -v "${AUTH_VOLUME}:/root/.claude" \
         -v "${OPENCODE_AUTH_VOLUME}:/root/.config/opencode" \
+        -v "${HOME}/.claude.json:/root/.claude.json:ro" \
         "$BASE_IMAGE"
 
     echo "[INFO] 部屋を開きました"
@@ -139,13 +140,20 @@ cmd_logs() {
 
 # ── コマンド: auth ───────────────────────────────────────────
 cmd_auth() {
-    echo "[INFO] 一時コンテナで認証を実行します..."
+    echo "[INFO] ホストの Claude Code 認証情報をボリュームにコピーします..."
+    local creds="${HOME}/.claude/.credentials.json"
+    if [ ! -f "$creds" ]; then
+        echo "[ERROR] ホストに認証情報が見つかりません: $creds"
+        echo "[ERROR] まずホスト側で 'claude auth login' を実行してください"
+        exit 1
+    fi
     docker volume create "$AUTH_VOLUME" > /dev/null 2>&1 || true
-    docker run -it --rm \
-        --entrypoint claude \
+    docker run --rm \
         -v "${AUTH_VOLUME}:/root/.claude" \
+        -v "${creds}:/src/.credentials.json:ro" \
+        --entrypoint /bin/bash \
         "$BASE_IMAGE" \
-        auth login
+        -c "cp /src/.credentials.json /root/.claude/.credentials.json && echo '[INFO] コピー完了'"
     echo "[INFO] 認証情報をボリューム '$AUTH_VOLUME' に保存しました"
     echo "[INFO] 以降の全部屋でこの認証が使われます"
 }
