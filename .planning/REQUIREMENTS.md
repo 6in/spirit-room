@@ -19,8 +19,8 @@
 
 ### Auth
 
-- [ ] **AUTH-01**: コンテナ内でClaude Code認証が完了できる（`spirit-room auth` 経由）
-- [ ] **AUTH-02**: 認証ボリューム（`spirit-room-auth`）が複数の部屋をまたいで共有される
+- [x] **AUTH-01**: コンテナ内でClaude Code認証が完了できる（`spirit-room auth` 経由）
+- [x] **AUTH-02**: 認証ボリューム（`spirit-room-auth`）が複数の部屋をまたいで共有される
 
 ### Training Loop
 
@@ -72,8 +72,8 @@
 | RUN-02 | Phase 1 | Pending |
 | RUN-03 | Phase 1 | Pending |
 | RUN-04 | Phase 1 | Pending |
-| AUTH-01 | Phase 2 | Pending |
-| AUTH-02 | Phase 2 | Pending |
+| AUTH-01 | Phase 2 | Complete |
+| AUTH-02 | Phase 2 | Complete |
 | LOOP-01 | Phase 2 | Pending |
 | LOOP-02 | Phase 2 | Pending |
 | LOOP-03 | Phase 2 | Pending |
