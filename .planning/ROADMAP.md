@@ -55,7 +55,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. Running `spirit-room-manager` starts Mr. Popo, completes the hearing, and writes MISSION.md
   2. Using that MISSION.md with `spirit-room open` starts the container and the training loop launches automatically
   3. Claude Code completes the POC implementation and the `.done` flag is created
-**Plans**: TBD
+**Plans**: 2 plans
+  - [ ] 03-01-PLAN.md — Fix infrastructure: install CLI, entrypoint auto-start, catalog pip flag, rebuild (Wave 1)
+  - [ ] 03-02-PLAN.md — Verify Mr. Popo E2E: hearing -> MISSION.md -> auto-training -> .done (Wave 2)
 
 ## Progress
 
@@ -66,4 +68,4 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. Infrastructure | 0/TBD | Not started | - |
 | 2. Auth & Training Loop | 2/3 | In Progress|  |
-| 3. End-to-End Flow | 0/TBD | Not started | - |
+| 3. End-to-End Flow | 0/2 | Not started | - |
