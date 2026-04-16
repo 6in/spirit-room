@@ -15,6 +15,23 @@ service ssh start
 service redis-server start
 echo "[INFO] Redis起動完了"
 
+# ── 界王星モード: CLAUDE_CONFIG_DIR 分岐 ─────────────────────
+# CLAUDE_CONFIG_DIR が設定されている = 界王星モード。
+# 共有認証ボリュームは /root/.claude-shared にマウントされている前提 (spirit-room kaio 側で -v 指定)。
+# その中の .credentials.json を $CLAUDE_CONFIG_DIR/.credentials.json に symlink することで、
+# トークンリフレッシュが共有ボリュームに戻り、他の部屋にも伝播する。
+if [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then
+    echo "[INFO] 界王星モード: CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR"
+    mkdir -p "$CLAUDE_CONFIG_DIR"
+
+    if [ -f /root/.claude-shared/.credentials.json ]; then
+        ln -sf /root/.claude-shared/.credentials.json "$CLAUDE_CONFIG_DIR/.credentials.json"
+        echo "[INFO] 認証情報を symlink: $CLAUDE_CONFIG_DIR/.credentials.json → /root/.claude-shared/.credentials.json"
+    else
+        echo "[WARN] /root/.claude-shared/.credentials.json が見つからない。spirit-room auth を実行せよ"
+    fi
+fi
+
 # ── 認証チェック ─────────────────────────────────────────────
 if ! claude auth status &>/dev/null 2>&1; then
     echo "
@@ -39,11 +56,15 @@ SESSION="spirit-room"
 tmux new-session -d -s "$SESSION" -x 220 -y 50
 
 tmux rename-window -t "$SESSION:0" "training"
-if [ -f /workspace/MISSION.md ] && [ ! -f /workspace/.done ]; then
+if [ -n "${CLAUDE_CONFIG_DIR:-}" ] && [ -f /workspace/KAIO-MISSION.md ] && [ ! -f /workspace/.kaio-done ]; then
+    # 界王星モード: GSD 駆動チェーン
+    tmux send-keys -t "$SESSION:training" "start-training-kaio" C-m
+elif [ -f /workspace/MISSION.md ] && [ ! -f /workspace/.done ]; then
+    # 精神と時の部屋モード (既存)
     tmux send-keys -t "$SESSION:training" "start-training" C-m
 else
     tmux send-keys -t "$SESSION:training" \
-        "echo '部屋[$ROOM_NAME] 準備完了 | start-training で修行開始 | status で確認'" C-m
+        "echo '部屋[$ROOM_NAME] 準備完了 | start-training(-kaio) で修行開始 | status で確認'" C-m
 fi
 
 tmux new-window -t "$SESSION" -n "logs"

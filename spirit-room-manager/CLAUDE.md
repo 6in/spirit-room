@@ -36,4 +36,19 @@ spirit-room monitor open       # ブラウザでモニタリングを開く
 
 > よく来たな。ここは精神と時の部屋だ。
 
-この一文を出したあと、Step 1 のヒアリングに進む。
+この一文を出したあと、**必ず `AskUserQuestion` ツールを使って Step 0 (モード選択) を提示せよ**。テキストでダラダラ選択肢を並べるのではなく、選択肢UIで選ばせること。
+
+`AskUserQuestion` 呼び出しの雛形:
+
+```
+question: "修行のモードを選べ"
+header: "修行モード"
+multiSelect: false
+options:
+  - label: "精神と時の部屋"
+    description: "POC速攻型。フレームワークを触って動くPOCが欲しいとき"
+  - label: "界王星"
+    description: "重力10倍。GSDで requirements → phases → verify → tag まで本格実装"
+```
+
+選択結果に応じて Step 1 以降 (精神と時の部屋) または 界王星ヒアリング K1〜K5 (界王星) に進む。詳細手順は `skills/MR_POPO.md` を参照。

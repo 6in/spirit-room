@@ -69,3 +69,15 @@ Phases execute in numeric order: 1 → 2 → 3
 | 1. Infrastructure | 0/TBD | Not started | - |
 | 2. Auth & Training Loop | 2/3 | In Progress|  |
 | 3. End-to-End Flow | 0/2 | Not started | - |
+
+### Phase 4: 界王星モード: GSD駆動の本格開発トレーニング部屋 (CLAUDE_CONFIG_DIR 切替 + 認証 symlink + /gsd-autonomous 非対話チェーン)
+
+**Goal:** 界王星モード追加 — `spirit-room kaio` で起動する部屋が CLAUDE_CONFIG_DIR で GSD を隔離インストールし、共有認証を symlink で引き継ぎ、Mr.ポポのモード選択経由で `/gsd-new-project` → `/gsd-autonomous` を非対話実行して段階開発をタグリリースまで完走する
+**Requirements**: KAIO-ENTRYPOINT-01, KAIO-AUTH-SYMLINK-01, KAIO-CLI-01, KAIO-MISSION-TEMPLATE-01, KAIO-TRAINING-LOOP-01, KAIO-MRPOPO-MODE-01, KAIO-E2E-01
+**Depends on:** Phase 3
+**Plans:** 5 plans
+  - [x] 04-01-PLAN.md — entrypoint.sh に CLAUDE_CONFIG_DIR 分岐と credentials symlink を追加 (Wave 1)
+  - [x] 04-02-PLAN.md — spirit-room CLI に kaio サブコマンドを追加 (Wave 1)
+  - [x] 04-03-PLAN.md — KAIO-MISSION.md.template を新規作成 (Wave 1)
+  - [x] 04-04-PLAN.md — start-training-kaio.sh + entrypoint tmux 分岐 + Mr.ポポ Step 0 モード選択 (Wave 2)
+  - [x] 04-05-PLAN.md — ベース再ビルド + Mr.ポポ経由 E2E 検証 (Wave 3)

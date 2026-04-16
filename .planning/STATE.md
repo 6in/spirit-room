@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: phase_complete
-stopped_at: Completed Phase 03 — E2E flow verified with Svelte TODO POC
-last_updated: "2026-04-14T12:40:00.000Z"
-last_activity: 2026-04-14 -- Quick task: journal + PHASE 3 REPORT + git commits added
+status: executing
+stopped_at: Completed 02-04-PLAN.md — gap closure auth fix
+last_updated: "2026-04-15T23:31:08.169Z"
+last_activity: 2026-04-15 -- Phase 04 execution started
 progress:
-  total_phases: 3
+  total_phases: 4
   completed_phases: 3
-  total_plans: 8
+  total_plans: 13
   completed_plans: 8
-  percent: 100
+  percent: 62
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-13)
 
 **Core value:** Mr.ポポにフレームワーク名と目的を伝えたら、Claude Codeが自律的にPOCを実装して動くところまで完成させる
-**Current focus:** Phase 03 — end-to-end-flow
+**Current focus:** Phase 04 — gsd-claude-config-dir-symlink-gsd-autonomous
 
 ## Current Position
 
-Phase: 03 (end-to-end-flow) — COMPLETE
-Plan: 2 of 2
-Status: Phase 03 complete — E2E verified (Svelte TODO POC 完走)
-Last activity: 2026-04-14 -- Phase 03 complete
+Phase: 04 (gsd-claude-config-dir-symlink-gsd-autonomous) — EXECUTING
+Plan: 1 of 5
+Status: Executing Phase 04
+Last activity: 2026-04-15 -- Phase 04 execution started
 
 Progress: [██████████] 100%
 
@@ -66,6 +66,10 @@ Recent decisions affecting current work:
 - (pre-execution)
 - [Phase 02-auth-training-loop]: CLAUDE_CODE_BUBBLEWRAP=1 を run_claude に追加（root コンテナの --dangerously-skip-permissions ブロック回避）
 - [Phase 02-auth-training-loop]: cmd_auth をSSH経由インタラクティブ認証方式に変更（TTY問題解決）
+
+### Roadmap Evolution
+
+- Phase 4 added: 界王星モード (GSD駆動の本格開発トレーニング部屋 — CLAUDE_CONFIG_DIR 切替 + 認証 symlink + /gsd-autonomous 非対話チェーン)
 
 ### Known Risks (from HANDOVER.md)
 

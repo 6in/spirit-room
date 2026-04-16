@@ -15,6 +15,7 @@ usage() {
     cat << EOF
 使い方:
   spirit-room open   [フォルダ]     部屋を開く（省略時はカレント）
+  spirit-room kaio   [フォルダ]     界王星を開く（GSD駆動の本格開発モード・重力10倍）
   spirit-room enter  [フォルダ]     部屋に入る（SSH + tmux attach）
   spirit-room list                   起動中の部屋一覧
   spirit-room close  [フォルダ]     部屋を閉じる
@@ -24,6 +25,7 @@ usage() {
 例:
   cd ~/projects/langgraph-poc && spirit-room open
   spirit-room open ~/projects/mastra-trial
+  spirit-room kaio ~/projects/my-app
   spirit-room enter ~/projects/langgraph-poc
   spirit-room list
 EOF
@@ -90,15 +92,98 @@ cmd_open() {
     echo "  確認 : spirit-room list"
 }
 
+# ── コマンド: kaio (界王星モード) ────────────────────────────
+# 重力10倍の界王星モード。CLAUDE_CONFIG_DIR=/workspace/.claude-home を設定し、
+# 共有認証ボリュームは /root/.claude-shared にマウントする（entrypoint 側で
+# プロジェクトローカル設定と統合される）。既存 cmd_open とは別コンテナ名で共存。
+cmd_kaio() {
+    local folder="${1:-$(pwd)}"
+    folder=$(realpath "$folder")
+    local name="$(folder_to_name "$folder")-kaio"
+    local port=$(find_free_port)
+
+    if docker ps --format '{{.Names}}' | grep -q "^${name}$"; then
+        echo "[INFO] 界王星 '$name' はすでに起動中 — 入室します"
+        cmd_enter "$folder"
+        return
+    fi
+
+    echo "
+╔══════════════════════════════════════════════╗
+║  界王星を開く (重力10倍)                    ║
+║  フォルダ : $folder
+║  コンテナ : $name
+║  SSHポート: $port
+║  モード   : GSD 駆動・本格開発
+╚══════════════════════════════════════════════╝
+"
+
+    # 認証ボリュームを先に作成（なければ）
+    docker volume create "$AUTH_VOLUME" > /dev/null 2>&1 || true
+
+    # ホスト側で refresh 済みのトークンを常にボリュームに反映する。
+    # Claude Code の OAuth トークンは短命なので、部屋起動ごとに最新を流し込む。
+    local host_creds="${HOME}/.claude/.credentials.json"
+    if [ -f "$host_creds" ]; then
+        echo "[INFO] ホストの最新認証情報をボリュームに同期中..."
+        docker run --rm \
+            -v "${AUTH_VOLUME}:/dst" \
+            -v "${host_creds}:/src/.credentials.json:ro" \
+            --entrypoint /bin/bash \
+            "$BASE_IMAGE" \
+            -c "cp /src/.credentials.json /dst/.credentials.json && chmod 600 /dst/.credentials.json" \
+            > /dev/null 2>&1 || echo "[WARN] 認証情報同期に失敗"
+    else
+        echo "[WARN] ホストに認証情報なし: $host_creds"
+        echo "       spirit-room auth を先に実行してください"
+    fi
+
+    docker run -d \
+        --name "$name" \
+        --hostname "$name" \
+        -e ROOM_NAME="$(basename $folder)" \
+        -e CLAUDE_CONFIG_DIR=/workspace/.claude-home \
+        -p "${port}:22" \
+        -v "${folder}:/workspace" \
+        -v "${AUTH_VOLUME}:/root/.claude-shared" \
+        -v "${HOME}/.claude.json:/root/.host-claude.json:ro" \
+        "$BASE_IMAGE"
+
+    echo "[INFO] 界王星を開きました"
+    echo ""
+    echo "  ホスト側ログ  : spirit-room logs  $folder"
+    echo "  再入室        : spirit-room enter $folder"
+    echo ""
+    echo "[INFO] tmux セッションにアタッチ中..."
+    # entrypoint.sh が tmux を立ち上げるまで少し待つ
+    sleep 2
+    cmd_enter "$folder"
+}
+
+# ── 実行中のコンテナを解決 (spirit-room / 界王星 両対応) ─────
+# 通常モード名が無ければ -kaio サフィックス付きを探す
+resolve_running_name() {
+    local base="$1"
+    if docker ps --format '{{.Names}}' | grep -q "^${base}$"; then
+        echo "$base"
+    elif docker ps --format '{{.Names}}' | grep -q "^${base}-kaio$"; then
+        echo "${base}-kaio"
+    else
+        echo ""
+    fi
+}
+
 # ── コマンド: enter ──────────────────────────────────────────
 cmd_enter() {
     local folder="${1:-$(pwd)}"
     folder=$(realpath "$folder")
-    local name=$(folder_to_name "$folder")
+    local base=$(folder_to_name "$folder")
+    local name=$(resolve_running_name "$base")
 
-    if ! docker ps --format '{{.Names}}' | grep -q "^${name}$"; then
-        echo "[ERROR] 部屋 '$name' は起動していません"
+    if [ -z "$name" ]; then
+        echo "[ERROR] 部屋 '$base' (または '${base}-kaio') は起動していません"
         echo "  起動: spirit-room open $folder"
+        echo "     または: spirit-room kaio $folder"
         exit 1
     fi
 
@@ -123,7 +208,13 @@ cmd_list() {
 cmd_close() {
     local folder="${1:-$(pwd)}"
     folder=$(realpath "$folder")
-    local name=$(folder_to_name "$folder")
+    local base=$(folder_to_name "$folder")
+    local name=$(resolve_running_name "$base")
+
+    if [ -z "$name" ]; then
+        echo "[ERROR] 部屋 '$base' (または '${base}-kaio') は起動していません"
+        exit 1
+    fi
 
     echo "[INFO] 部屋 '$name' を閉じます..."
     docker stop "$name" && docker rm "$name"
@@ -176,6 +267,7 @@ cmd_auth() {
 # ── メイン ───────────────────────────────────────────────────
 case "${1:-}" in
     open)   cmd_open  "${2:-}" ;;
+    kaio)   cmd_kaio  "${2:-}" ;;
     enter)  cmd_enter "${2:-}" ;;
     list)   cmd_list ;;
     close)  cmd_close "${2:-}" ;;

@@ -74,8 +74,9 @@ COPY CLAUDE.md              /room/CLAUDE.md
 COPY skills/                /room/skills/
 
 RUN chmod +x /entrypoint.sh /room/scripts/*.sh \
-    && ln -s /room/scripts/start-training.sh /usr/local/bin/start-training \
-    && ln -s /room/scripts/status.sh         /usr/local/bin/status
+    && ln -s /room/scripts/start-training.sh      /usr/local/bin/start-training \
+    && ln -s /room/scripts/start-training-kaio.sh /usr/local/bin/start-training-kaio \
+    && ln -s /room/scripts/status.sh              /usr/local/bin/status
 
 EXPOSE 22
 WORKDIR /workspace

@@ -16,33 +16,138 @@
 
 > よく来たな。ここは精神と時の部屋だ。
 
-この一文を出したあと、ヒアリング手順の Step 1 に進め。
+この一文を出したあと、ヒアリング手順の **Step 0 (モード選択)** に進め。
 
 ---
 
 ## ヒアリング手順
 
-以下を順番に聞け。一度に全部聞くな。会話しろ。
+**全ての質問は必ず `AskUserQuestion` ツールで行え。テキストで質問をダラダラ並べるな。**
+選択肢に当てはまらないケースは各 `AskUserQuestion` の最後に `"その他 (自由記述)"` オプションを置け (ユーザーは "Other" でテキスト入力できる)。
 
-### Step 1: 修行の目的
+以下を順番に聞け。一度に全部聞くな。1 問 = 1 `AskUserQuestion` 呼び出し。
+
+### Step 0: モードの選択 (最初に必ず聞け)
+
+挨拶の直後、**必ず `AskUserQuestion` ツールを使って**モードを選ばせよ。自由記述で答えさせるな。
+
 ```
-- 何のフレームワーク/ライブラリを試したいか
-- 何を理解したいか（概念の理解 / 動作確認 / 実装パターン習得）
-- 特に調査したい観点はあるか（API の癖 / 設計思想 / 性能 / 他との比較 など）
-  → これは PHASE 0 (RESEARCH) で AI が何を深掘りするかのヒントになる
+AskUserQuestion(
+  question: "修行のモードを選べ",
+  header: "修行モード",
+  multiSelect: false,
+  options: [
+    {
+      label: "精神と時の部屋",
+      description: "POC速攻型。フレームワークを触って動くPOCが欲しいとき"
+    },
+    {
+      label: "界王星",
+      description: "重力10倍。GSDで requirements → phases → verify → tag まで本格実装"
+    }
+  ]
+)
+```
+
+選択結果でモードを分岐する:
+
+- **「精神と時の部屋」選択時**: 下記 **Step 1 → Step 2 → Step 3** の既存ヒアリングへ進む。最終的に `MISSION.md` を生成し `spirit-room open` で起動する。
+- **「界王星」選択時**: 下記 **界王星ヒアリング (K1〜K5)** へ進む。最終的に `KAIO-MISSION.md` を生成し `spirit-room kaio` で起動する。
+
+---
+
+### Step 1: 修行の目的 — 3 つの質問を順に `AskUserQuestion` で聞け
+
+**1-a. フレームワーク/ライブラリ**
+```
+AskUserQuestion(
+  question: "何のフレームワーク/ライブラリを試したい?",
+  header: "対象",
+  multiSelect: false,
+  options: [
+    { label: "LangGraph",        description: "エージェント用グラフ実行" },
+    { label: "Next.js App Router", description: "React SSR/RSC" },
+    { label: "FastAPI",          description: "Python 非同期 API" },
+    { label: "Prisma",           description: "TypeScript ORM" },
+    { label: "React Flow",       description: "ノードエディタ UI" },
+    { label: "その他 (自由記述)", description: "上記にないフレームワーク名を入力" }
+  ]
+)
+```
+
+**1-b. 理解したい粒度**
+```
+AskUserQuestion(
+  question: "何を理解したいか?",
+  header: "目的",
+  multiSelect: false,
+  options: [
+    { label: "概念の理解",         description: "何のためのツールかを掴む" },
+    { label: "動作確認",           description: "とりあえず動くところまで" },
+    { label: "実装パターン習得",   description: "典型的な使い方の定着" },
+    { label: "その他 (自由記述)",  description: "自分の言葉で記述" }
+  ]
+)
+```
+
+**1-c. 調査観点 (PHASE 0 RESEARCH のヒント)**
+```
+AskUserQuestion(
+  question: "特に調査したい観点はあるか?",
+  header: "調査観点",
+  multiSelect: true,
+  options: [
+    { label: "API の癖",          description: "エッジケース・癖" },
+    { label: "設計思想",          description: "背景にある哲学" },
+    { label: "性能",              description: "ベンチマーク・制限" },
+    { label: "他との比較",        description: "類似ツールとの違い" },
+    { label: "特になし",          description: "AI にお任せ" },
+    { label: "その他 (自由記述)", description: "他にあれば記述" }
+  ]
+)
 ```
 
 ### Step 2: 完了イメージ
 ```
-- 何ができたら修行完了か
-- 最低限の完了条件（動けばいい / テスト必須 / READMEまで書く）
+AskUserQuestion(
+  question: "どこまでできたら修行完了にする?",
+  header: "完了条件",
+  multiSelect: false,
+  options: [
+    { label: "動けばいい",        description: "hello world 相当で可" },
+    { label: "テスト必須",        description: "pytest / npm test が通る" },
+    { label: "README まで書く",   description: "学習サマリーを残す" },
+    { label: "その他 (自由記述)", description: "独自の完了条件" }
+  ]
+)
 ```
 
-### Step 3: 制約確認
+### Step 3: 制約確認 — 2 つの質問
+**3-a. 外部 API の使用可否**
 ```
-- 外部APIの使用可否
-- 特定バージョンの指定有無
-- 参考にしたいドキュメント・実装例のURL（RESEARCH フェーズの起点になる）
+AskUserQuestion(
+  question: "外部 API の呼び出しを許すか?",
+  header: "外部 API",
+  multiSelect: false,
+  options: [
+    { label: "使ってよい",        description: "OpenAI / Anthropic / その他公開 API" },
+    { label: "使わない",          description: "ローカル完結" },
+    { label: "その他 (自由記述)", description: "条件付きなどあれば" }
+  ]
+)
+```
+
+**3-b. バージョン・参考 URL**
+```
+AskUserQuestion(
+  question: "特定バージョンや参考にしたいドキュメント URL はあるか?",
+  header: "参照",
+  multiSelect: false,
+  options: [
+    { label: "なし (最新版で OK)", description: "latest を使う" },
+    { label: "あり (自由記述)",    description: "バージョン番号や URL を入力" }
+  ]
+)
 ```
 
 ---
@@ -134,3 +239,171 @@ spirit-room list
 修行の状況確認:
   spirit-room logs ~/projects/[名前]
 ```
+
+---
+
+## 界王星ヒアリング (Step 0 で 界王星を選んだときのみ)
+
+`/room/scripts/KAIO-MISSION.md.template` (部屋内) または `spirit-room/base/scripts/KAIO-MISSION.md.template` (リポジトリ) を参考に、次を順に聞け。一度に全部聞くな。
+
+**各質問は `AskUserQuestion` で行え。** K1・K2 のようにテーマが広い質問は "その他 (自由記述)" を選ばせて詳細を受けとれ。
+
+### K1. プロジェクトの目的 — 2 つの質問を順に聞け
+
+**K1-a. プロジェクトの種別**
+```
+AskUserQuestion(
+  question: "どんな種類のものを作る?",
+  header: "プロジェクト種別",
+  multiSelect: false,
+  options: [
+    { label: "Web API",           description: "REST / GraphQL のサーバー" },
+    { label: "CLI ツール",        description: "ターミナルで動くコマンド" },
+    { label: "Web フロントエンド", description: "ブラウザで動く UI" },
+    { label: "バッチ / スクリプト", description: "定期実行や一括処理" },
+    { label: "その他 (自由記述)", description: "上記にないもの" }
+  ]
+)
+```
+
+**K1-b. 具体的に何を作りたいか (自由記述)**
+```
+AskUserQuestion(
+  question: "具体的に何を作りたい? 誰のどんな問題を解く? (自由に書け)",
+  header: "プロジェクト説明"
+)
+```
+ここがプロジェクトの核心。ユーザーが自由にやりたいことを書ける。選択肢は出さず、テキスト入力を受ける。
+
+### K2. 機能要件 (大まか)
+```
+AskUserQuestion(
+  question: "主な機能を教えてくれ (自由記述でざっくり 3〜5 個。GSD が細分化する)",
+  header: "機能要件"
+)
+```
+自由記述で受ける。空欄や「お任せ」なら GSD に委ねる。
+
+### K3. フェーズ分割の示唆 (任意)
+```
+AskUserQuestion(
+  question: "Phase 分割のヒントはあるか?",
+  header: "フェーズ分割",
+  multiSelect: false,
+  options: [
+    { label: "GSD 任せ",           description: "お任せで OK" },
+    { label: "ヒントあり (自由記述)", description: "Phase 1/2/3 の意図があれば記述" }
+  ]
+)
+```
+
+### K4. 成功条件
+```
+AskUserQuestion(
+  question: "修行完走の判定はどうする?",
+  header: "成功条件",
+  multiSelect: false,
+  options: [
+    { label: "pytest / vitest が pass", description: "テストコマンドで判定" },
+    { label: "git tag v1.0 が存在する", description: "GSD のタグ付けで判定" },
+    { label: "独自コマンド (自由記述)", description: "例: 'curl localhost:8080 == 200'" },
+    { label: "その他 (自由記述)",       description: "独自に指定" }
+  ]
+)
+```
+
+### K5. 制約
+**5-a. 言語・ランタイム**
+```
+AskUserQuestion(
+  question: "言語 / ランタイムの縛りは?",
+  header: "言語",
+  multiSelect: false,
+  options: [
+    { label: "Python 3",           description: "pytest / uv / pipx" },
+    { label: "Node.js 20",         description: "npm / bun" },
+    { label: "Bash + Docker",      description: "シェルスクリプト主体" },
+    { label: "お任せ",             description: "ミッションに合わせて AI が選ぶ" },
+    { label: "その他 (自由記述)",  description: "Go / Rust / Ruby など" }
+  ]
+)
+```
+
+**5-b. 外部 API**
+```
+AskUserQuestion(
+  question: "外部 API を呼んでよいか?",
+  header: "外部 API",
+  multiSelect: false,
+  options: [
+    { label: "使ってよい",        description: "OpenAI / Anthropic / その他" },
+    { label: "使わない",          description: "ローカル完結" },
+    { label: "その他 (自由記述)", description: "条件付きなど" }
+  ]
+)
+```
+
+**5-c. 依存追加方針**
+```
+AskUserQuestion(
+  question: "依存追加の方針は?",
+  header: "依存追加",
+  multiSelect: false,
+  options: [
+    { label: "必要なら追加 OK",     description: "GSD が必要と判断したら入れる" },
+    { label: "最小限に抑える",      description: "標準ライブラリ優先" },
+    { label: "その他 (自由記述)",   description: "例: 特定パッケージ禁止" }
+  ]
+)
+```
+
+---
+
+## KAIO-MISSION.md 生成ルール
+
+界王星ヒアリング完了後、`/room/scripts/KAIO-MISSION.md.template` のフォーマットに沿って `KAIO-MISSION.md` を生成する。GSD の `/gsd-new-project` がこのファイルを非対話で読んで答えにするので、**各項目は明確な一文で書く**。
+
+---
+
+## 界王星モード部屋の起動手順
+
+### 1. フォルダ名を提案する
+```
+命名規則: kaio-[プロジェクト名]
+例: kaio-todo-api
+    kaio-markdown-blog
+```
+
+### 2. フォルダ作成 + KAIO-MISSION.md 配置
+```bash
+mkdir -p ~/projects/[フォルダ名]
+# KAIO-MISSION.md を生成して配置
+```
+
+### 3. 界王星モードで部屋を開く
+```bash
+spirit-room kaio ~/projects/[フォルダ名]
+```
+
+### 4. 起動確認
+```bash
+spirit-room list
+```
+`spirit-room-[フォルダ名]-kaio` のようなコンテナが表示されたらユーザーに報告する。
+
+### 5. 報告 (界王星モード)
+```
+界王星の部屋の準備ができました (重力10倍)。
+
+  フォルダ : ~/projects/[名前]
+  コンテナ : spirit-room-[名前]-kaio
+
+GSD が自律的に requirements → phases → verify → tag まで回します。
+
+部屋に入る:
+  spirit-room kaio ~/projects/[名前]
+
+修行の状況確認:
+  spirit-room logs ~/projects/[名前]
+```
+
