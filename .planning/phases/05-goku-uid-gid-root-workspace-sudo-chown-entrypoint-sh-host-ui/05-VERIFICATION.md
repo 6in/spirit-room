@@ -1,8 +1,9 @@
 ---
 phase: 05-goku-uid-gid-root-workspace-sudo-chown-entrypoint-sh-host-ui
 verified: 2026-04-17T13:00:00Z
-status: human_needed
-score: 16/16 must-haves verified (live-tested); 17/17 with kaio live-test pending (Phase 4 互換 1 件)
+status: passed
+verified_live: 2026-04-18T01:15:00Z
+score: 17/17 must-haves verified (live-tested including kaio GSD chain full completion)
 overrides_applied: 0
 plans_verified:
   - 05-01

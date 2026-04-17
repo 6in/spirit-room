@@ -1,20 +1,20 @@
 ---
-status: partial
+status: resolved
 phase: 05-goku-uid-gid-root-workspace-sudo-chown-entrypoint-sh-host-ui
 source: [05-VERIFICATION.md]
 started: 2026-04-17T14:00:00Z
-updated: 2026-04-17T14:00:00Z
+updated: 2026-04-18T01:10:00Z
 ---
 
 ## Current Test
 
-[awaiting human testing]
+[all tests completed]
 
 ## Tests
 
 ### 1. 界王星 (kaio) モード E2E 検証
 expected: `spirit-room kaio` の docker run --rm 認証同期 (chown 込み) + 本体起動 (entrypoint の kaio 分岐で chown -h が走る) + cmd_enter (goku SSH) がすべて成功。credentials symlink が goku 所有で、実体も goku 所有。
-result: [pending]
+result: passed (2026-04-17) — GSD autonomous チェーンが goku コンテキストで完走し KAIO v1.0 を ship、35/35 tests passing、/workspace/.kaio-done が作成された。credentials symlink + auth status は goku で機能 (完走した事実で実証)。副次: start-training-kaio.sh PHASE 3 の /create-report skill 不足を検出 → 別 todo `2026-04-18-kaio-create-report-skill-missing` に記録 (Phase 5 非回帰)
 
 **Test procedure:**
 ```bash
@@ -30,7 +30,7 @@ ls -la /root/.claude-shared/.credentials.json       # 期待: goku:goku 所有
 
 ### 2. start-training ループが goku 完走するか (NON_REGRESSION-LOOP-01 live)
 expected: LOOP-01/02/03/04 の PHASE1→PHASE2 サイクルが goku コンテキストで完走、git commit も goku の user.email/name で残る。/workspace 成果物が goku:goku 所有でホスト側から sudo なしで扱える。
-result: [pending]
+result: passed (2026-04-18) — RESEARCH → PREPARE → TRAINING が完走、修行終了後にホスト側で /workspace 成果物を現在ユーザー権限で直接確認できた (sudo chown 不要)。Phase 5 core goal 達成。途中で "Not logged in" ループに陥る問題を検出し、goku HOME → /root/.claude への symlink fix (commit 9875d56) で解消済み
 
 **Test procedure:**
 ```bash
@@ -54,7 +54,7 @@ ls -la /workspace/.done /workspace/phase5-goku-smoke
 
 ### 3. HOST_UID 変更時の自動修復 (HIGH-02 fix 挙動)
 expected: 既存コンテナを別 HOST_UID で restart したとき、goku の UID/GID が自動的に再マップされ、/workspace/auth volumes が新 UID で chown される。
-result: [pending]
+result: skipped (観察のみ項目、Gate ではない) — コードレビュー fix (commit ec6f27b) で usermod/groupmod による再割当ロジックを追加済み。entrypoint.sh 内静的検証済み。live 実行は今回の通常ユーザー環境 (UID=1000 のみ) では再現困難のため後日 /gsd-verify-work で検証
 
 **Test procedure:**
 ```bash
@@ -83,15 +83,25 @@ docker rm -f phase5-uid-test
 
 ### 4. spirit-room open → enter 連続操作 UX (LOW-02, 情報観察のみ)
 expected: `spirit-room open` 直後に `spirit-room enter` すると、警告なく goku@localhost に SSH 接続でき tmux attach される。
-result: [pending]
+result: passed (2026-04-18) — UAT #2 実行時に open → enter を連続実行、tmux に goku でアタッチ成功 (start-training が goku コンテキストで起動して完走したことで間接確認)
 
 ## Summary
 
 total: 4
-passed: 0
+passed: 3
 issues: 0
-pending: 4
-skipped: 0
+pending: 0
+skipped: 1
 blocked: 0
 
 ## Gaps
+
+- gap-01: start-training が "Not logged in" でループする (goku HOME から /root/.claude に届かない)
+  severity: high
+  status: resolved
+  resolution: commit 9875d56 で goku HOME → /root/{.claude, .claude.json, .config/opencode} への symlink + chmod o+x /root を entrypoint.sh に追加。通常モード UAT #2 で再検証済み、kaio モード UAT #1 でも GSD chain 完走により間接確認済み。
+
+- gap-02: kaio モード PHASE 3 の /create-report skill 不足
+  severity: medium
+  status: deferred
+  note: Phase 5 の回帰ではない既存問題。別 todo `2026-04-18-kaio-create-report-skill-missing` に登録済み。REPORT.md 自体はフォールバック生成されるためワークフローはブロックされない。
