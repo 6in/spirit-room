@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-13)
 Phase: 05
 Plan: Not started
 Status: Executing Phase 05
-Last activity: 2026-04-17
+Last activity: 2026-04-17 - Completed quick task 260418-257: kaio /create-report skill cwd 非依存化
 
 Progress: [██████████] 100%
 
@@ -80,12 +80,17 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- [2026-04-17-goku-uid](todos/pending/2026-04-17-goku-uid.md) — コンテナ内に goku ユーザーを作成しホスト UID と一致させる (Phase 5 として着手中)
-- [2026-04-18-kaio-create-report-skill-missing](todos/pending/2026-04-18-kaio-create-report-skill-missing.md) — kaio モードで /create-report skill が見つからず REPORT フェーズが失敗する
+(none)
 
 ### Blockers/Concerns
 
 None yet.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260418-257 | kaio モードで /create-report skill を $CLAUDE_CONFIG_DIR/commands/ にもコピーし cwd 非依存で解決 | 2026-04-17 | 7b06ff0 | [260418-257-kaio-create-report-skill-claude-config-d](./quick/260418-257-kaio-create-report-skill-claude-config-d/) |
 
 ## Session Continuity
 

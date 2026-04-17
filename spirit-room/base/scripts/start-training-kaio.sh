@@ -45,10 +45,24 @@ else
     # `npx -y` はパッケージ取得の確認だけで、インストーラ本体の質問には効かない。
     yes '' | CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG_DIR" npx -y get-shit-done-cc@latest 2>&1 | tee -a "$LOG_FILE" || true
 
-    # 界王星スキルをプロジェクトの .claude/commands/ にインストール
+    # 界王星スキルを配布する。
+    # 1) project-level (cwd=/workspace で起動した claude が拾う fallback)
+    # 2) user-level $CLAUDE_CONFIG_DIR/commands/ (cwd に依存せず常に解決される本命)
+    #    PHASE KAIO-3 の `claude -p "/create-report"` は tmux pane や goku HOME 起点で起動する
+    #    ケースがあり project-level だけでは Unknown command になる。
     mkdir -p /workspace/.claude/commands
-    cp /room/scripts/create-report.md /workspace/.claude/commands/create-report.md
-    log "スキル /create-report インストール完了"
+    cp -f /room/scripts/create-report.md /workspace/.claude/commands/create-report.md
+    log "スキル /create-report を project-level に配置: /workspace/.claude/commands/create-report.md"
+
+    # CLAUDE_CONFIG_DIR は L16 で default 値が入る想定だが、念のため空ガード。
+    # 空であっても PHASE KAIO-1 全体を止めないよう warn のみ出して継続する。
+    if [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then
+        mkdir -p "$CLAUDE_CONFIG_DIR/commands"
+        cp -f /room/scripts/create-report.md "$CLAUDE_CONFIG_DIR/commands/create-report.md"
+        log "スキル /create-report を user-level に配置: $CLAUDE_CONFIG_DIR/commands/create-report.md"
+    else
+        log "[WARN] CLAUDE_CONFIG_DIR が未設定のため user-level skill 配布を skip"
+    fi
 
     touch "$PREPARED_FLAG"
     log "GSD セットアップ完了"
