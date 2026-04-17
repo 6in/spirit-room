@@ -80,7 +80,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-(none)
+- README.md を作成 (docs) — `.planning/todos/pending/2026-04-17-readme-md.md`
 
 ### Blockers/Concerns
 
