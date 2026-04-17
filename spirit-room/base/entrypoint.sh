@@ -15,6 +15,38 @@ service ssh start
 service redis-server start
 echo "[INFO] Redis起動完了"
 
+# ── HOST_UID/GID 受け取り (fallback: 1000:1000) ─────────────
+# 手動 docker run や CI 経由で HOST_UID/GID が渡されない場合も落ちないようにする。
+HOST_UID="${HOST_UID:-1000}"
+HOST_GID="${HOST_GID:-1000}"
+echo "[INFO] HOST_UID/GID=${HOST_UID}:${HOST_GID}"
+
+# ── goku ユーザーの冪等作成 ─────────────────────────────────
+# D-01: ビルド時ではなくランタイムで作る (HOST_UID がホストごとに異なるため)
+# D-02: 冪等。既に goku が居れば skip。GID も既存 group がなければ作る
+# D-04: パスワードは root と同じ spiritroom
+# D-05: NOPASSWD:ALL の sudo を付与 (POC 用途のため粒度は絞らない)
+# useradd の -o は UID 重複許可 (既存ユーザー _apt 等と HOST_UID が衝突した場合の保険)
+if ! id goku &>/dev/null; then
+    getent group "$HOST_GID" >/dev/null || groupadd -g "$HOST_GID" goku
+    useradd -m -u "$HOST_UID" -g "$HOST_GID" -s /bin/bash -o goku
+    echo 'goku:spiritroom' | chpasswd
+    echo 'goku ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/goku
+    chmod 0440 /etc/sudoers.d/goku
+    echo "[INFO] goku ユーザーを作成 (UID=$HOST_UID GID=$HOST_GID)"
+else
+    echo "[INFO] goku ユーザーは既に存在 (skip)"
+fi
+
+# ── 認証ボリュームと /workspace を goku 所有に ───────────────
+# D-10/D-11: 起動ごとに chown を走らせ、既存の root 所有ファイルを一度で正常化する
+# 対象: 認証ボリュームのマウント先 (通常モード: /root/.claude、kaio モード: /root/.claude-shared、opencode: /root/.config/opencode) および /workspace 本体
+chown -R "$HOST_UID:$HOST_GID" /root/.claude 2>/dev/null || true
+chown -R "$HOST_UID:$HOST_GID" /root/.config/opencode 2>/dev/null || true
+[ -d /root/.claude-shared ] && chown -R "$HOST_UID:$HOST_GID" /root/.claude-shared 2>/dev/null || true
+chown -R "$HOST_UID:$HOST_GID" /workspace 2>/dev/null || true
+echo "[INFO] /workspace と認証ボリュームを $HOST_UID:$HOST_GID 所有に切替"
+
 # ── 界王星モード: CLAUDE_CONFIG_DIR 分岐 ─────────────────────
 # CLAUDE_CONFIG_DIR が設定されている = 界王星モード。
 # 共有認証ボリュームは /root/.claude-shared にマウントされている前提 (spirit-room kaio 側で -v 指定)。
@@ -23,10 +55,14 @@ echo "[INFO] Redis起動完了"
 if [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then
     echo "[INFO] 界王星モード: CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR"
     mkdir -p "$CLAUDE_CONFIG_DIR"
+    # D-13: CLAUDE_CONFIG_DIR 自身も goku 所有にする (/workspace 下なので整合)
+    chown "$HOST_UID:$HOST_GID" "$CLAUDE_CONFIG_DIR" 2>/dev/null || true
 
     if [ -f /root/.claude-shared/.credentials.json ]; then
         ln -sf /root/.claude-shared/.credentials.json "$CLAUDE_CONFIG_DIR/.credentials.json"
-        echo "[INFO] 認証情報を symlink: $CLAUDE_CONFIG_DIR/.credentials.json → /root/.claude-shared/.credentials.json"
+        # D-14: symlink 自体の所有者を goku に (chown -h)。実体ファイルは上の chown -R /root/.claude-shared で既に goku 所有
+        chown -h "$HOST_UID:$HOST_GID" "$CLAUDE_CONFIG_DIR/.credentials.json" 2>/dev/null || true
+        echo "[INFO] 認証情報を symlink: $CLAUDE_CONFIG_DIR/.credentials.json → /root/.claude-shared/.credentials.json (goku 所有)"
     else
         echo "[WARN] /root/.claude-shared/.credentials.json が見つからない。spirit-room auth を実行せよ"
     fi
