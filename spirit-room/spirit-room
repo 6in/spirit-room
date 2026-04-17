@@ -78,6 +78,8 @@ cmd_open() {
         --name "$name" \
         --hostname "$name" \
         -e ROOM_NAME="$(basename $folder)" \
+        -e HOST_UID="$(id -u)" \
+        -e HOST_GID="$(id -g)" \
         -p "${port}:22" \
         -v "${folder}:/workspace" \
         -v "${AUTH_VOLUME}:/root/.claude" \
@@ -143,6 +145,8 @@ cmd_kaio() {
         --hostname "$name" \
         -e ROOM_NAME="$(basename $folder)" \
         -e CLAUDE_CONFIG_DIR=/workspace/.claude-home \
+        -e HOST_UID="$(id -u)" \
+        -e HOST_GID="$(id -g)" \
         -p "${port}:22" \
         -v "${folder}:/workspace" \
         -v "${AUTH_VOLUME}:/root/.claude-shared" \
