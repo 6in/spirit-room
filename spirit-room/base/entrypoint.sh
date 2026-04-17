@@ -87,33 +87,51 @@ else
     echo "[INFO] catalog.md: デフォルト(/room/catalog.md)を使用"
 fi
 
-# ── tmuxセッション ───────────────────────────────────────────
-SESSION="spirit-room"
-tmux new-session -d -s "$SESSION" -x 220 -y 50
+# ── goku として git config (goku HOME に root 側と同じ設定をミラー) ─
+# D-12: Dockerfile L58-64 の root 用 git config はそのまま。goku HOME 側にも
+# safe.directory='*' / user.email / user.name / init.defaultBranch を設定し、
+# start-training.sh が goku で走っても dubious ownership エラーを出さないようにする。
+su - goku -c "git config --global --add safe.directory '*' && \
+    git config --global user.email 'spirit-room@localhost' && \
+    git config --global user.name 'Spirit Room' && \
+    git config --global init.defaultBranch main" || echo "[WARN] goku 用 git config 設定に失敗"
 
-tmux rename-window -t "$SESSION:0" "training"
+# ── tmuxセッション (goku として起動) ─────────────────────────
+# D-08/D-09 ⑤: tmux は goku として起動。CLAUDE_CONFIG_DIR など環境変数は親 shell で展開して埋め込む
+# (su - は login shell のため env が goku デフォルトにリセットされる)
+# Pattern B3 L146: bash ではなく bash -s を使う (stdin script を明示的に指示)
+SESSION="spirit-room"
+
+# 分岐判定は親 shell (root) 側でフラグ化し、ヒアドキュメント内で展開する
+_TRAINING_CMD="echo '部屋[${ROOM_NAME}] 準備完了 | start-training(-kaio) で修行開始 | status で確認'"
 if [ -n "${CLAUDE_CONFIG_DIR:-}" ] && [ -f /workspace/KAIO-MISSION.md ] && [ ! -f /workspace/.kaio-done ]; then
-    # 界王星モード: GSD 駆動チェーン
-    tmux send-keys -t "$SESSION:training" "start-training-kaio" C-m
+    _TRAINING_CMD="start-training-kaio"
 elif [ -f /workspace/MISSION.md ] && [ ! -f /workspace/.done ]; then
-    # 精神と時の部屋モード (既存)
-    tmux send-keys -t "$SESSION:training" "start-training" C-m
-else
-    tmux send-keys -t "$SESSION:training" \
-        "echo '部屋[$ROOM_NAME] 準備完了 | start-training(-kaio) で修行開始 | status で確認'" C-m
+    _TRAINING_CMD="start-training"
 fi
 
-tmux new-window -t "$SESSION" -n "logs"
-tmux send-keys -t "$SESSION:logs" \
-    "tail -f /workspace/.logs/progress.log 2>/dev/null || (echo 'ログ待機中...'; while true; do sleep 2; tail -f /workspace/.logs/progress.log 2>/dev/null && break; done)" C-m
+# kaio モード時は CLAUDE_CONFIG_DIR を goku セッション内でも使えるよう ~/.profile 経由で export
+# (su - goku が login shell なので .profile が読まれる。冪等化のため重複追加を避ける)
+if [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then
+    su - goku -c "grep -q 'export CLAUDE_CONFIG_DIR=' ~/.profile 2>/dev/null || echo 'export CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR}' >> ~/.profile" || true
+fi
 
-tmux new-window -t "$SESSION" -n "workspace"
-tmux send-keys -t "$SESSION:workspace" \
-    "watch -n 2 'tree /workspace -L 3 -I .logs 2>/dev/null || ls -la /workspace'" C-m
+su - goku -c "bash -s" << EOF
+    set -e
+    tmux new-session -d -s "${SESSION}" -x 220 -y 50
+    tmux rename-window -t "${SESSION}:0" "training"
+    tmux send-keys -t "${SESSION}:training" "${_TRAINING_CMD}" C-m
 
-tmux select-window -t "$SESSION:training"
+    tmux new-window -t "${SESSION}" -n "logs"
+    tmux send-keys -t "${SESSION}:logs" "tail -f /workspace/.logs/progress.log 2>/dev/null || (echo 'ログ待機中...'; while true; do sleep 2; tail -f /workspace/.logs/progress.log 2>/dev/null && break; done)" C-m
 
-echo "[INFO] tmux '$SESSION' 起動完了"
-echo "[INFO] 接続: tmux attach -t $SESSION"
+    tmux new-window -t "${SESSION}" -n "workspace"
+    tmux send-keys -t "${SESSION}:workspace" "watch -n 2 'tree /workspace -L 3 -I .logs 2>/dev/null || ls -la /workspace'" C-m
+
+    tmux select-window -t "${SESSION}:training"
+EOF
+
+echo "[INFO] tmux '$SESSION' 起動完了 (user=goku)"
+echo "[INFO] 接続: tmux attach -t $SESSION (goku で接続すること)"
 
 tail -f /dev/null
