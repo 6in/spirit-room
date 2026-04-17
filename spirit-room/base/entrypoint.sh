@@ -90,7 +90,15 @@ if [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then
 fi
 
 # ── 認証チェック ─────────────────────────────────────────────
-if ! claude auth status &>/dev/null 2>&1; then
+# MEDIUM-03 対応: Phase 5 の目的は「goku で claude が走る」ことなので、auth status も
+# goku コンテキストで確認する。kaio モードの CLAUDE_CONFIG_DIR は環境変数として明示的に
+# 引き継がないと login shell でリセットされるため、su -c の先頭で一時的に付与する。
+_auth_env=""
+if [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then
+    # 値は上流 (docker run -e) 由来なので Phase 5 では信頼済み。将来拡張でユーザー入力を混ぜる場合は %q 検討
+    _auth_env="CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR} "
+fi
+if ! su - goku -c "${_auth_env}claude auth status" &>/dev/null 2>&1; then
     echo "
 ╔══════════════════════════════════════════════╗
 ║  未認証: SSH接続後に以下を実行してください   ║
@@ -98,7 +106,7 @@ if ! claude auth status &>/dev/null 2>&1; then
 ╚══════════════════════════════════════════════╝
 "
 else
-    echo "[INFO] Claude Code 認証済み"
+    echo "[INFO] Claude Code 認証済み (goku context)"
 fi
 
 # ── catalog.mdの優先順位: /workspace > /room ─────────────────
