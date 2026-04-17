@@ -90,7 +90,7 @@ cmd_open() {
     echo "[INFO] 部屋を開きました"
     echo ""
     echo "  入室 : spirit-room enter $folder"
-    echo "  または: ssh root@localhost -p $port  (パス: spiritroom)"
+    echo "  または: ssh goku@localhost -p $port  (パス: spiritroom)"
     echo "  確認 : spirit-room list"
 }
 
@@ -197,7 +197,7 @@ cmd_enter() {
     echo "[INFO] 部屋[$name] に入室 (SSH port: $port)"
     ssh -o StrictHostKeyChecking=no \
         -o UserKnownHostsFile=/dev/null \
-        -t root@localhost -p "$port" \
+        -t goku@localhost -p "$port" \
         "tmux attach -t spirit-room || tmux new-session -s spirit-room"
 }
 
