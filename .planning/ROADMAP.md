@@ -91,5 +91,5 @@ Phases execute in numeric order: 1 → 2 → 3
 
 Plans:
 - [x] 05-01-PLAN.md — Dockerfile の SSH 設定を PermitRootLogin no に変更し sudo パッケージを確認 (Wave 1)
-- [ ] 05-02-PLAN.md — entrypoint.sh に HOST_UID 受取 / goku 冪等作成 / chown / kaio symlink chown / goku HOME git config / tmux を su - goku -c でラップ (Wave 2)
-- [ ] 05-03-PLAN.md — spirit-room CLI の cmd_open / cmd_kaio / cmd_kaio --rm / cmd_enter に HOST_UID 渡しと goku SSH を反映 (Wave 2)
+- [x] 05-02-PLAN.md — entrypoint.sh に HOST_UID 受取 / goku 冪等作成 / chown / kaio symlink chown / goku HOME git config / tmux を su - goku -c でラップ (Wave 2)
+- [x] 05-03-PLAN.md — spirit-room CLI の cmd_open / cmd_kaio / cmd_kaio --rm / cmd_enter に HOST_UID 渡しと goku SSH を反映 (Wave 2)
