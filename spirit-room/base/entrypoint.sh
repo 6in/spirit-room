@@ -139,8 +139,15 @@ fi
 
 # kaio モード時は CLAUDE_CONFIG_DIR を goku セッション内でも使えるよう ~/.profile 経由で export
 # (su - goku が login shell なので .profile が読まれる。冪等化のため重複追加を避ける)
+# MEDIUM-02 対応: 固定 prefix grep だと過去起動で別の値が書き込まれていても検出できず古い値が残る。
+# 既存の `export CLAUDE_CONFIG_DIR=` 行を一度削除してから最新値を追記する方式で、
+# 値が異なるケースも確実に追従させる。
 if [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then
-    su - goku -c "grep -q 'export CLAUDE_CONFIG_DIR=' ~/.profile 2>/dev/null || echo 'export CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR}' >> ~/.profile" || true
+    su - goku -c "
+        touch ~/.profile
+        sed -i '/^export CLAUDE_CONFIG_DIR=/d' ~/.profile 2>/dev/null || true
+        echo 'export CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR}' >> ~/.profile
+    " || true
 fi
 
 # MEDIUM-01 対応: _TRAINING_CMD は printf %q でエスケープ済みの bash 用 1-word 表記なので、
