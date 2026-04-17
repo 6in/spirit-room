@@ -68,6 +68,31 @@ chown -R "$HOST_UID:$HOST_GID" /root/.config/opencode 2>/dev/null || true
 chown -R "$HOST_UID:$HOST_GID" /workspace 2>/dev/null || true
 echo "[INFO] /workspace と認証ボリュームを $HOST_UID:$HOST_GID 所有に切替"
 
+# ── goku HOME から認証ボリューム実体 (/root/*) への symlink ──
+# docker run の -v マウント先は /root/.claude 等に固定されているため、goku で claude CLI
+# を起動すると $HOME=/home/goku 配下を探しに行き credentials を見失う。goku HOME に
+# symlink を張って両経路からアクセス可能にする (通常モード専用。kaio モードは下の
+# CLAUDE_CONFIG_DIR 分岐で /workspace/.claude-home 経由の別ルートを取る)。
+# /root は既定 drwx------ なので、listing は許さず traverse のみ許可する +x を付与する
+# (symlink 先の実ファイル読取には +x が必要。中身の一覧禁止は +r を付けないことで維持)
+chmod o+x /root 2>/dev/null || true
+if [ -d /home/goku ]; then
+    [ -d /root/.claude ] && [ ! -e /home/goku/.claude ] && \
+        ln -s /root/.claude /home/goku/.claude && \
+        chown -h "$HOST_UID:$HOST_GID" /home/goku/.claude
+    [ -e /root/.claude.json ] && [ ! -e /home/goku/.claude.json ] && \
+        ln -s /root/.claude.json /home/goku/.claude.json && \
+        chown -h "$HOST_UID:$HOST_GID" /home/goku/.claude.json
+    if [ -d /root/.config/opencode ]; then
+        mkdir -p /home/goku/.config
+        chown "$HOST_UID:$HOST_GID" /home/goku/.config 2>/dev/null || true
+        [ ! -e /home/goku/.config/opencode ] && \
+            ln -s /root/.config/opencode /home/goku/.config/opencode && \
+            chown -h "$HOST_UID:$HOST_GID" /home/goku/.config/opencode
+    fi
+    echo "[INFO] goku HOME から認証ボリュームへの symlink を確認"
+fi
+
 # ── 界王星モード: CLAUDE_CONFIG_DIR 分岐 ─────────────────────
 # CLAUDE_CONFIG_DIR が設定されている = 界王星モード。
 # 共有認証ボリュームは /root/.claude-shared にマウントされている前提 (spirit-room kaio 側で -v 指定)。
