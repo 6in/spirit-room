@@ -53,10 +53,15 @@ RUN npm install -g opencode-ai
 # ── SSH設定 ─────────────────────────────────────────────────
 # root の chpasswd は残す (entrypoint で sudo 経由の管理用途に root を保持するが SSH ログインは禁止)。
 # goku のパスワード設定と UID 割当は entrypoint.sh 側でランタイム処理 (HOST_UID がホストごとに異なるため)。
+# HIGH-01 対応: Ubuntu 24.04 ベースイメージには uid=1000/gid=1000 の 'ubuntu' ユーザーがデフォルトで存在する。
+# HOST_UID=1000 (Linux 一般ユーザーの最頻値) だと useradd -o で UID 重複しつつ goku が作られ、
+# getpwuid(1000) が 'ubuntu' を返す等の name-resolution 混乱が起こるため、ビルド時に ubuntu を削除しておく。
 RUN mkdir /var/run/sshd \
     && echo 'root:spiritroom' | chpasswd \
     && sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config \
-    && echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
+    && echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config \
+    && (userdel -r ubuntu 2>/dev/null || true) \
+    && (groupdel ubuntu 2>/dev/null || true)
 
 # ── Git 設定 ─────────────────────────────────────────────────
 # /workspace はホストからマウントされるため所有権が root と一致しない。
