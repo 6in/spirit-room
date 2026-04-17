@@ -131,9 +131,11 @@ cmd_kaio() {
         docker run --rm \
             -v "${AUTH_VOLUME}:/dst" \
             -v "${host_creds}:/src/.credentials.json:ro" \
+            -e HOST_UID="$(id -u)" \
+            -e HOST_GID="$(id -g)" \
             --entrypoint /bin/bash \
             "$BASE_IMAGE" \
-            -c "cp /src/.credentials.json /dst/.credentials.json && chmod 600 /dst/.credentials.json" \
+            -c "cp /src/.credentials.json /dst/.credentials.json && chown \$HOST_UID:\$HOST_GID /dst/.credentials.json && chmod 600 /dst/.credentials.json" \
             > /dev/null 2>&1 || echo "[WARN] 認証情報同期に失敗"
     else
         echo "[WARN] ホストに認証情報なし: $host_creds"
