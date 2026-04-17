@@ -2,6 +2,10 @@
 set -e
 
 ROOM_NAME="${ROOM_NAME:-$(basename /workspace)}"
+# MEDIUM-01 対応: ROOM_NAME は後段で tmux heredoc 経由の bash 再解釈に流れるため、
+# シェルメタ文字を英数ハイフンアンダースコアに正規化する。
+# 例: "test';touch /tmp/x;#" → "test__touch__tmp_x__"
+ROOM_NAME="${ROOM_NAME//[^a-zA-Z0-9_-]/_}"
 
 echo "
 ╔══════════════════════════════════════════════╗
@@ -120,7 +124,13 @@ su - goku -c "git config --global --add safe.directory '*' && \
 SESSION="spirit-room"
 
 # 分岐判定は親 shell (root) 側でフラグ化し、ヒアドキュメント内で展開する
-_TRAINING_CMD="echo '部屋[${ROOM_NAME}] 準備完了 | start-training(-kaio) で修行開始 | status で確認'"
+# MEDIUM-01 対応: `_TRAINING_CMD` は後段の unquoted heredoc で親展開され、goku の bash に
+# 再解釈される (tmux send-keys の第二引数)。値に '/$/` が含まれると injection 経路が成立するので、
+# printf -v '%q' で bash 解釈安全な形に事前エスケープする。デフォルトメッセージの `[${ROOM_NAME}]`
+# も同様にエスケープ済み文字列を組み立てる。
+_default_msg="部屋[${ROOM_NAME}] 準備完了 | start-training(-kaio) で修行開始 | status で確認"
+printf -v _default_msg_q '%q' "$_default_msg"
+_TRAINING_CMD="echo $_default_msg_q"
 if [ -n "${CLAUDE_CONFIG_DIR:-}" ] && [ -f /workspace/KAIO-MISSION.md ] && [ ! -f /workspace/.kaio-done ]; then
     _TRAINING_CMD="start-training-kaio"
 elif [ -f /workspace/MISSION.md ] && [ ! -f /workspace/.done ]; then
@@ -133,11 +143,14 @@ if [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then
     su - goku -c "grep -q 'export CLAUDE_CONFIG_DIR=' ~/.profile 2>/dev/null || echo 'export CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR}' >> ~/.profile" || true
 fi
 
+# MEDIUM-01 対応: _TRAINING_CMD は printf %q でエスケープ済みの bash 用 1-word 表記なので、
+# heredoc 内で tmux send-keys の第二引数としてそのまま展開 (double-quote で追加包装しない)。
+# 他の tmux send-keys 第二引数 (ログ tail / workspace watch) は固定文字列のため従来通り double-quote で OK。
 su - goku -c "bash -s" << EOF
     set -e
     tmux new-session -d -s "${SESSION}" -x 220 -y 50
     tmux rename-window -t "${SESSION}:0" "training"
-    tmux send-keys -t "${SESSION}:training" "${_TRAINING_CMD}" C-m
+    tmux send-keys -t "${SESSION}:training" ${_TRAINING_CMD} C-m
 
     tmux new-window -t "${SESSION}" -n "logs"
     tmux send-keys -t "${SESSION}:logs" "tail -f /workspace/.logs/progress.log 2>/dev/null || (echo 'ログ待機中...'; while true; do sleep 2; tail -f /workspace/.logs/progress.log 2>/dev/null && break; done)" C-m
