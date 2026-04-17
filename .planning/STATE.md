@@ -80,7 +80,8 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+- [2026-04-17-goku-uid](todos/pending/2026-04-17-goku-uid.md) — コンテナ内に goku ユーザーを作成しホスト UID と一致させる (Phase 5 として着手中)
+- [2026-04-18-kaio-create-report-skill-missing](todos/pending/2026-04-18-kaio-create-report-skill-missing.md) — kaio モードで /create-report skill が見つからず REPORT フェーズが失敗する
 
 ### Blockers/Concerns
 
