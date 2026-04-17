@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     openssh-server tmux \
     python3 python3-pip python3-venv pipx \
     build-essential \
+    sudo \
     ca-certificates gnupg \
     jq tree \
     sqlite3 libsqlite3-dev \
@@ -50,9 +51,11 @@ RUN npm install -g @anthropic-ai/claude-code
 RUN npm install -g opencode-ai
 
 # ── SSH設定 ─────────────────────────────────────────────────
+# root の chpasswd は残す (entrypoint で sudo 経由の管理用途に root を保持するが SSH ログインは禁止)。
+# goku のパスワード設定と UID 割当は entrypoint.sh 側でランタイム処理 (HOST_UID がホストごとに異なるため)。
 RUN mkdir /var/run/sshd \
     && echo 'root:spiritroom' | chpasswd \
-    && echo "PermitRootLogin yes" >> /etc/ssh/sshd_config \
+    && sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config \
     && echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
 
 # ── Git 設定 ─────────────────────────────────────────────────
