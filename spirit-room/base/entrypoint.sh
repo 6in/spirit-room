@@ -27,6 +27,10 @@ echo "[INFO] HOST_UID/GID=${HOST_UID}:${HOST_GID}"
 # D-04: パスワードは root と同じ spiritroom
 # D-05: NOPASSWD:ALL の sudo を付与 (POC 用途のため粒度は絞らない)
 # useradd の -o は UID 重複許可 (既存ユーザー _apt 等と HOST_UID が衝突した場合の保険)
+# HIGH-02 対応: 既に goku が居てもその UID/GID が HOST_UID/GID と一致するか確認し、
+# 不一致 (別ホストでボリュームを使い回し、HOST_UID が変わった docker restart 等) なら
+# usermod/groupmod で再割り当てする。原則 D-20 で「close → re-open」が推奨だが、
+# docker start/restart を手動実行したケースの安全策として自動修復する。
 if ! id goku &>/dev/null; then
     getent group "$HOST_GID" >/dev/null || groupadd -g "$HOST_GID" goku
     useradd -m -u "$HOST_UID" -g "$HOST_GID" -s /bin/bash -o goku
@@ -35,7 +39,20 @@ if ! id goku &>/dev/null; then
     chmod 0440 /etc/sudoers.d/goku
     echo "[INFO] goku ユーザーを作成 (UID=$HOST_UID GID=$HOST_GID)"
 else
-    echo "[INFO] goku ユーザーは既に存在 (skip)"
+    # トップレベル実行のため local は使えない (bash 関数内専用)。通常変数で受ける。
+    current_uid=$(id -u goku)
+    current_gid=$(id -g goku)
+    if [ "$current_uid" != "$HOST_UID" ] || [ "$current_gid" != "$HOST_GID" ]; then
+        echo "[WARN] 既存 goku UID/GID=${current_uid}:${current_gid} が HOST_UID/GID=${HOST_UID}:${HOST_GID} と不一致。再割り当てします (運用上は 'spirit-room close' → 'open' 推奨)"
+        # GID: 既存グループが無ければ作る。既に HOST_GID が別名で存在する場合は groupmod を試みる (失敗は無視)
+        getent group "$HOST_GID" >/dev/null || groupadd -g "$HOST_GID" goku 2>/dev/null || true
+        groupmod -g "$HOST_GID" goku 2>/dev/null || true
+        # UID: -o で重複許可して再割り当て (HOST_UID が既に別ユーザーに使われていても許可する保険)
+        usermod -u "$HOST_UID" -g "$HOST_GID" -o goku 2>/dev/null || true
+        echo "[INFO] goku を UID=${HOST_UID} GID=${HOST_GID} に再割り当て完了。続く chown で所有権を再同期します"
+    else
+        echo "[INFO] goku ユーザーは既に存在 (UID/GID 一致 / skip)"
+    fi
 fi
 
 # ── 認証ボリュームと /workspace を goku 所有に ───────────────
