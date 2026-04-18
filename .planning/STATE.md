@@ -81,6 +81,7 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 - README.md を作成 (docs) — `.planning/todos/pending/2026-04-17-readme-md.md`
+- spirit-room に --docker フラグ追加 (Docker Compose 対応) (tooling) — `.planning/todos/pending/2026-04-18-spirit-room-docker-docker-compose.md`
 
 ### Blockers/Concerns
 
