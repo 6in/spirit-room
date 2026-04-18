@@ -98,12 +98,13 @@ Plans:
 
 **Goal:** `spirit-room open --docker [folder]` で起動した部屋から、Claude が `docker compose up` でホスト上の兄弟コンテナとしてプロダクトを起動・操作できる状態を達成する。DooD (socket マウント) 方式で軽量実装、opt-in のためデフォルト挙動は変えない。compose のボリュームパス解釈問題とサービスへのネットワーク到達問題を catalog.md の指示と環境変数で解決する。
 **Depends on:** Phase 5
-**Plans:** TBD
+**Plans:** 5 plans
 
-実装スコープ:
-- **CLI (`spirit-room/spirit-room`)**: `cmd_open` に `--docker` フラグを追加。フラグ指定時は docker run に以下を追加 — (1) `-v /var/run/docker.sock:/var/run/docker.sock`、(2) `--add-host=host.docker.internal:host-gateway`、(3) `-e HOST_WORKSPACE=<ホスト絶対パス>`、(4) `-e SPIRIT_ROOM_HOST_GATEWAY=host.docker.internal`。`cmd_kaio` も同様に対応するか要検討。
-- **Dockerfile (`spirit-room/base/Dockerfile`)**: docker CLI + compose plugin を追加 (`curl -fsSL https://get.docker.com | sh`、dockerd は起動しない)。goku ユーザーを `docker` グループに追加して sock にアクセス可能にする。
-- **Catalog (`spirit-room/base/catalog.md`)**: compose 使用時のボリューム記法 (`${HOST_WORKSPACE}` を使う)、サービスアクセス方法 (`host.docker.internal:PORT`)、セキュリティ注意 (ホスト root 相当の権限) を追記。
-- **セキュリティ**: socket マウントはホスト root 相当なので opt-in (`--docker` フラグ必須) を堅持。デフォルトは従来通り安全側。
+Plans:
+- [ ] 06-01-PLAN.md — Dockerfile に docker CLI + compose plugin レイヤー追加 (Wave 1)
+- [ ] 06-02-PLAN.md — entrypoint.sh に docker グループ動的合流ロジック追加 (Wave 1)
+- [ ] 06-03-PLAN.md — catalog.md に Docker Compose モードセクション追加 (Wave 1)
+- [ ] 06-04-PLAN.md — spirit-room CLI に --docker フラグ / _docker_extra_args() / 兄弟掃除追加 (Wave 2)
+- [ ] 06-05-PLAN.md — イメージ再ビルド + E2E 検証 (Wave 3, human-verify)
 
 参照: `.planning/todos/pending/2026-04-18-spirit-room-docker-docker-compose.md`
