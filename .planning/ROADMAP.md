@@ -93,3 +93,17 @@ Plans:
 - [x] 05-01-PLAN.md — Dockerfile の SSH 設定を PermitRootLogin no に変更し sudo パッケージを確認 (Wave 1)
 - [x] 05-02-PLAN.md — entrypoint.sh に HOST_UID 受取 / goku 冪等作成 / chown / kaio symlink chown / goku HOME git config / tmux を su - goku -c でラップ (Wave 2)
 - [x] 05-03-PLAN.md — spirit-room CLI の cmd_open / cmd_kaio / cmd_kaio --rm / cmd_enter に HOST_UID 渡しと goku SSH を反映 (Wave 2)
+
+### Phase 6: spirit-room に --docker フラグを追加して Docker Compose ベースのプロダクトを修行対象にできるようにする
+
+**Goal:** `spirit-room open --docker [folder]` で起動した部屋から、Claude が `docker compose up` でホスト上の兄弟コンテナとしてプロダクトを起動・操作できる状態を達成する。DooD (socket マウント) 方式で軽量実装、opt-in のためデフォルト挙動は変えない。compose のボリュームパス解釈問題とサービスへのネットワーク到達問題を catalog.md の指示と環境変数で解決する。
+**Depends on:** Phase 5
+**Plans:** TBD
+
+実装スコープ:
+- **CLI (`spirit-room/spirit-room`)**: `cmd_open` に `--docker` フラグを追加。フラグ指定時は docker run に以下を追加 — (1) `-v /var/run/docker.sock:/var/run/docker.sock`、(2) `--add-host=host.docker.internal:host-gateway`、(3) `-e HOST_WORKSPACE=<ホスト絶対パス>`、(4) `-e SPIRIT_ROOM_HOST_GATEWAY=host.docker.internal`。`cmd_kaio` も同様に対応するか要検討。
+- **Dockerfile (`spirit-room/base/Dockerfile`)**: docker CLI + compose plugin を追加 (`curl -fsSL https://get.docker.com | sh`、dockerd は起動しない)。goku ユーザーを `docker` グループに追加して sock にアクセス可能にする。
+- **Catalog (`spirit-room/base/catalog.md`)**: compose 使用時のボリューム記法 (`${HOST_WORKSPACE}` を使う)、サービスアクセス方法 (`host.docker.internal:PORT`)、セキュリティ注意 (ホスト root 相当の権限) を追記。
+- **セキュリティ**: socket マウントはホスト root 相当なので opt-in (`--docker` フラグ必須) を堅持。デフォルトは従来通り安全側。
+
+参照: `.planning/todos/pending/2026-04-18-spirit-room-docker-docker-compose.md`

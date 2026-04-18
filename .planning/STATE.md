@@ -71,6 +71,7 @@ Recent decisions affecting current work:
 
 - Phase 4 added: 界王星モード (GSD駆動の本格開発トレーニング部屋 — CLAUDE_CONFIG_DIR 切替 + 認証 symlink + /gsd-autonomous 非対話チェーン)
 - Phase 5 added: コンテナ内に goku ユーザーを作成しホスト UID/GID と一致させる (root 実行による /workspace 所有権問題の解消)
+- Phase 6 added: spirit-room に --docker フラグを追加して Docker Compose ベースのプロダクトを修行対象にできるようにする (DooD 方式、socket マウント opt-in)
 
 ### Known Risks (from HANDOVER.md)
 
