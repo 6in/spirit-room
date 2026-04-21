@@ -15,14 +15,17 @@
 ## 使えるコマンド
 
 ```bash
-spirit-room open   [フォルダ]   # 部屋を開く
-spirit-room enter  [フォルダ]   # 部屋に入る
-spirit-room list               # 起動中の部屋一覧
-spirit-room close  [フォルダ]   # 部屋を閉じる
-spirit-room logs   [フォルダ]   # ログを見る
-spirit-room monitor start      # モニタリング起動
-spirit-room monitor open       # ブラウザでモニタリングを開く
+spirit-room open  [--kochou] [フォルダ]  # 部屋を開く (--kochou で胡蝶の夢モード = DooD、compose POC 用)
+spirit-room kaio  [--kochou] [フォルダ]  # 界王星モードで部屋を開く (--kochou は同上)
+spirit-room enter  [フォルダ]            # 部屋に入る
+spirit-room list                        # 起動中の部屋一覧
+spirit-room close  [フォルダ]            # 部屋を閉じる (胡蝶の夢で起動時は兄弟コンテナも自動削除)
+spirit-room logs   [フォルダ]            # ログを見る
+spirit-room monitor start               # モニタリング起動
+spirit-room monitor open                # ブラウザでモニタリングを開く
 ```
+
+**`--kochou` の使い時:** 胡蝶の夢モード (荘子)。ユーザーが compose.yaml や docker-compose で複数サービスを立てる POC を望むとき。ヒアリングで確認する (`skills/MR_POPO.md` Step 3-c / K5-d)。
 
 ## プロジェクトフォルダ
 

@@ -150,6 +150,23 @@ AskUserQuestion(
 )
 ```
 
+**3-c. 胡蝶の夢モード (Docker Compose の使用)**
+
+Phase 6 で追加された `--kochou` フラグ = 胡蝶の夢モード (DooD) が使えるか確認する。**compose.yaml / docker-compose を POC 内で動かす必要があるか** を聞け。
+```
+AskUserQuestion(
+  question: "compose.yaml や docker-compose で他のサービス (DB / nginx / Redis 等) を立てる POC か?",
+  header: "胡蝶の夢モード",
+  multiSelect: false,
+  options: [
+    { label: "はい (--kochou で起動)",    description: "胡蝶の夢モード。部屋から docker compose up でホスト上に兄弟コンテナを立てる" },
+    { label: "いいえ (通常起動)",         description: "単独のフレームワーク POC、compose は使わない" }
+  ]
+)
+```
+
+「はい」を選んだ場合、起動時に `spirit-room open --kochou [フォルダ]` を使うこと (後述 §3)。「いいえ」なら従来通り `spirit-room open [フォルダ]`。
+
 ---
 
 ## MISSION.md 生成ルール
@@ -172,6 +189,8 @@ AskUserQuestion(
 
 ## 調査観点（RESEARCH フェーズで深掘りすること）
 [Step 1 で聞いた「特に調査したい観点」があればそのまま。なければ「基本的な利用パターンと想定されるハマりどころ」]
+
+**Docker image variant の選好:** POC 用途で公式 Docker image を使う場合、可能な限り `-slim` / `-alpine` の軽量バリアントを優先して指定せよ。実測で `python:2.7` フル版 (~900 MB) の pull に 14 分かかった一方、`python:2.7-slim` (~100 MB) は 2 分で完了し、PREPARE フェーズ全体が 19:30 → 2:46 と 7× 高速化した (2026-04-20 検証)。フル版でしか動かない依存 (例: apt で GUI ライブラリを要求する等) が明確に判明した場合のみフル版にフォールバックせよ。
 
 ## 完了条件（全て満たすまで繰り返せ）
 - [ ] `/workspace/RESEARCH.md` が存在する
@@ -216,9 +235,20 @@ mkdir -p ~/projects/[フォルダ名]
 ```
 
 ### 3. 部屋を開く
+
+Step 3-c で胡蝶の夢モードの使用を聞いた結果に従って分岐する:
+
+**「はい (--kochou で起動)」の場合:**
+```bash
+spirit-room open --kochou ~/projects/[フォルダ名]
+```
+
+**「いいえ (通常起動)」の場合:**
 ```bash
 spirit-room open ~/projects/[フォルダ名]
 ```
+
+`--kochou` 指定時は部屋が `/var/run/docker.sock` をマウントし、内部から `docker compose up` でホスト上に兄弟コンテナを立てられる (Phase 6 で追加)。
 
 ### 4. 起動確認
 ```bash
@@ -357,6 +387,23 @@ AskUserQuestion(
 )
 ```
 
+**5-d. 胡蝶の夢モード (Docker Compose の使用)**
+
+Phase 6 の `--kochou` フラグ = 胡蝶の夢モード (DooD) が使えるか確認。**プロダクトが compose.yaml で他サービスを立てる構成か** を聞け。
+```
+AskUserQuestion(
+  question: "compose.yaml や docker-compose で他のサービス (DB / nginx / Redis 等) を立てるプロダクトか?",
+  header: "胡蝶の夢モード",
+  multiSelect: false,
+  options: [
+    { label: "はい (--kochou で起動)",    description: "胡蝶の夢モード。部屋から docker compose up でホスト上に兄弟コンテナを立てる" },
+    { label: "いいえ (通常起動)",         description: "単一プロセス / 単一言語のプロダクト、compose は使わない" }
+  ]
+)
+```
+
+「はい」選択時は起動コマンドを `spirit-room kaio --kochou [フォルダ]` に切り替える (後述)。
+
 ---
 
 ## KAIO-MISSION.md 生成ルール
@@ -381,6 +428,15 @@ mkdir -p ~/projects/[フォルダ名]
 ```
 
 ### 3. 界王星モードで部屋を開く
+
+K5-d で胡蝶の夢モードの使用を聞いた結果に従って分岐する:
+
+**「はい (--kochou で起動)」の場合:**
+```bash
+spirit-room kaio --kochou ~/projects/[フォルダ名]
+```
+
+**「いいえ (通常起動)」の場合:**
 ```bash
 spirit-room kaio ~/projects/[フォルダ名]
 ```

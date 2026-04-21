@@ -1,11 +1,19 @@
 ---
 created: 2026-04-18T11:10:31.873Z
+completed: 2026-04-19
 title: spirit-room に --docker フラグ追加 (Docker Compose 対応)
 area: tooling
+phase: 06-spirit-room-docker-docker-compose
+plans: 06-01, 06-02, 06-03, 06-04, 06-05
 files:
   - spirit-room/spirit-room
   - spirit-room/base/Dockerfile
   - spirit-room/base/catalog.md
+  - spirit-room/base/entrypoint.sh
+---
+
+**Completed:** 2026-04-19 via Phase 06 (5 plans across 3 waves + E2E verification)
+
 ---
 
 ## Problem

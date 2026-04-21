@@ -28,6 +28,8 @@ usage() {
   spirit-room kaio ~/projects/my-app
   spirit-room enter ~/projects/langgraph-poc
   spirit-room list
+  spirit-room open --kochou ~/projects/compose-poc    # 胡蝶の夢 (DooD): docker compose が使える部屋
+  spirit-room kaio --kochou ~/projects/my-app         # 界王星モードでも --kochou 対応
 EOF
     exit 1
 }
@@ -48,9 +50,69 @@ find_free_port() {
     echo $port
 }
 
+# ── --kochou フラグ用追加 docker run 引数 ─────────────────────
+# 胡蝶の夢モード (荘子): 部屋から host の docker daemon を叩ける DooD モード。
+# 夢 (部屋) から現実 (host) を操作できる = 境界が溶ける感覚にちなむ命名。
+# D-10: --kochou 指定時に docker run に追加する引数を 1 行 1 トークンで echo する
+# 呼び出し側は mapfile -t で配列化すること (単語分割回避)
+# 引数: $1=folder (realpath 済み絶対パス), $2=room_name
+_kochou_extra_args() {
+    local folder="$1"
+    local room_name="$2"
+    local host_docker_gid
+    host_docker_gid=$(stat -c '%g' /var/run/docker.sock 2>/dev/null || echo "")
+
+    # printf を使う: echo "-e" / "-v" だと bash 組み込み echo のフラグとして
+    # 解釈されて消費されるため (backslash 解釈 ON / 改行抑制)、必ず printf で出力する
+    printf '%s\n' \
+        "-v" "/var/run/docker.sock:/var/run/docker.sock" \
+        "--add-host=host.docker.internal:host-gateway" \
+        "-e" "HOST_WORKSPACE=${folder}" \
+        "-e" "SPIRIT_ROOM_HOST_GATEWAY=host.docker.internal" \
+        "-e" "SPIRIT_ROOM_KOCHOU=1" \
+        "-e" "COMPOSE_PROJECT_NAME=${room_name}"
+    if [ -n "$host_docker_gid" ]; then
+        printf '%s\n' "-e" "HOST_DOCKER_GID=${host_docker_gid}"
+    fi
+}
+
+# ── host 認証情報をボリュームへ同期 (open/kaio 共用) ─────────
+# Claude Code の OAuth トークンは短命なので、部屋起動ごとに host の
+# 最新 ~/.claude/.credentials.json を AUTH_VOLUME の .credentials.json に
+# 上書きコピーする。host に creds が無い場合は WARN のみで return し、
+# 呼び出し側 (open/kaio) はそのまま docker run -d へ進める。
+_sync_host_credentials() {
+    local host_creds="${HOME}/.claude/.credentials.json"
+    if [ ! -f "$host_creds" ]; then
+        echo "[WARN] ホストに認証情報なし: $host_creds"
+        echo "       spirit-room auth を先に実行してください"
+        return 0
+    fi
+
+    echo "[INFO] ホストの最新認証情報をボリュームに同期中..."
+    docker run --rm \
+        -v "${AUTH_VOLUME}:/dst" \
+        -v "${host_creds}:/src/.credentials.json:ro" \
+        -e HOST_UID="$(id -u)" \
+        -e HOST_GID="$(id -g)" \
+        --entrypoint /bin/bash \
+        "$BASE_IMAGE" \
+        -c "cp /src/.credentials.json /dst/.credentials.json && chown \$HOST_UID:\$HOST_GID /dst/.credentials.json && chmod 600 /dst/.credentials.json" \
+        > /dev/null 2>&1 || echo "[WARN] 認証情報同期に失敗"
+}
+
 # ── コマンド: open ───────────────────────────────────────────
 cmd_open() {
-    local folder="${1:-$(pwd)}"
+    # D-11: --kochou はどの位置でも OK (先頭・末尾どちらでも解釈)
+    local kochou_flag=0
+    local args=()
+    for _a in "$@"; do
+        case "$_a" in
+            --kochou) kochou_flag=1 ;;
+            *) args+=("$_a") ;;
+        esac
+    done
+    local folder="${args[0]:-$(pwd)}"
     folder=$(realpath "$folder")
     local name=$(folder_to_name "$folder")
     local port=$(find_free_port)
@@ -70,16 +132,33 @@ cmd_open() {
 ╚══════════════════════════════════════════════╝
 "
 
+    # D-19: 胡蝶の夢モード (--kochou) のセキュリティ警告 (確認プロンプトなし)
+    if [ "$kochou_flag" = "1" ]; then
+        echo "[WARN] 胡蝶の夢 (--kochou): /var/run/docker.sock をマウントしました。"
+        echo "       夢か現か — 部屋から host の全 docker コンテナを操作できる (= ホスト root 相当)"
+    fi
+
     # 認証ボリュームを先に作成（なければ）
     docker volume create "$AUTH_VOLUME"         > /dev/null 2>&1 || true
     docker volume create "$OPENCODE_AUTH_VOLUME" > /dev/null 2>&1 || true
 
+    # host の Claude credentials を毎回 AUTH_VOLUME に同期 (Q4Q-01)
+    _sync_host_credentials
+
+    # D-10: --kochou 時の追加引数を mapfile で配列化 (1 行 1 トークン形式で空白安全)
+    local _extra_args=()
+    if [ "$kochou_flag" = "1" ]; then
+        mapfile -t _extra_args < <(_kochou_extra_args "$folder" "$name")
+    fi
+
     docker run -d \
         --name "$name" \
         --hostname "$name" \
-        -e ROOM_NAME="$(basename $folder)" \
+        -e ROOM_NAME="$(basename "$folder")" \
         -e HOST_UID="$(id -u)" \
         -e HOST_GID="$(id -g)" \
+        -e TZ="${TZ:-Asia/Tokyo}" \
+        "${_extra_args[@]}" \
         -p "${port}:22" \
         -v "${folder}:/workspace" \
         -v "${AUTH_VOLUME}:/root/.claude" \
@@ -99,7 +178,16 @@ cmd_open() {
 # 共有認証ボリュームは /root/.claude-shared にマウントする（entrypoint 側で
 # プロジェクトローカル設定と統合される）。既存 cmd_open とは別コンテナ名で共存。
 cmd_kaio() {
-    local folder="${1:-$(pwd)}"
+    # D-11/D-13: --kochou はどの位置でも OK。kaio 固有のロジックには影響しない
+    local kochou_flag=0
+    local args=()
+    for _a in "$@"; do
+        case "$_a" in
+            --kochou) kochou_flag=1 ;;
+            *) args+=("$_a") ;;
+        esac
+    done
+    local folder="${args[0]:-$(pwd)}"
     folder=$(realpath "$folder")
     local name="$(folder_to_name "$folder")-kaio"
     local port=$(find_free_port)
@@ -120,35 +208,33 @@ cmd_kaio() {
 ╚══════════════════════════════════════════════╝
 "
 
+    # D-19: 胡蝶の夢モード (--kochou) のセキュリティ警告
+    if [ "$kochou_flag" = "1" ]; then
+        echo "[WARN] 胡蝶の夢 (--kochou): /var/run/docker.sock をマウントしました。"
+        echo "       夢か現か — 部屋から host の全 docker コンテナを操作できる (= ホスト root 相当)"
+    fi
+
     # 認証ボリュームを先に作成（なければ）
     docker volume create "$AUTH_VOLUME" > /dev/null 2>&1 || true
 
-    # ホスト側で refresh 済みのトークンを常にボリュームに反映する。
-    # Claude Code の OAuth トークンは短命なので、部屋起動ごとに最新を流し込む。
-    local host_creds="${HOME}/.claude/.credentials.json"
-    if [ -f "$host_creds" ]; then
-        echo "[INFO] ホストの最新認証情報をボリュームに同期中..."
-        docker run --rm \
-            -v "${AUTH_VOLUME}:/dst" \
-            -v "${host_creds}:/src/.credentials.json:ro" \
-            -e HOST_UID="$(id -u)" \
-            -e HOST_GID="$(id -g)" \
-            --entrypoint /bin/bash \
-            "$BASE_IMAGE" \
-            -c "cp /src/.credentials.json /dst/.credentials.json && chown \$HOST_UID:\$HOST_GID /dst/.credentials.json && chmod 600 /dst/.credentials.json" \
-            > /dev/null 2>&1 || echo "[WARN] 認証情報同期に失敗"
-    else
-        echo "[WARN] ホストに認証情報なし: $host_creds"
-        echo "       spirit-room auth を先に実行してください"
+    # host の Claude credentials を毎回 AUTH_VOLUME に同期 (open/kaio 共用)
+    _sync_host_credentials
+
+    # D-10/D-13: --kochou 時の追加引数を mapfile で配列化 (認証同期の --rm docker run には含めない)
+    local _extra_args=()
+    if [ "$kochou_flag" = "1" ]; then
+        mapfile -t _extra_args < <(_kochou_extra_args "$folder" "$name")
     fi
 
     docker run -d \
         --name "$name" \
         --hostname "$name" \
-        -e ROOM_NAME="$(basename $folder)" \
+        -e ROOM_NAME="$(basename "$folder")" \
         -e CLAUDE_CONFIG_DIR=/workspace/.claude-home \
         -e HOST_UID="$(id -u)" \
         -e HOST_GID="$(id -g)" \
+        -e TZ="${TZ:-Asia/Tokyo}" \
+        "${_extra_args[@]}" \
         -p "${port}:22" \
         -v "${folder}:/workspace" \
         -v "${AUTH_VOLUME}:/root/.claude-shared" \
@@ -224,6 +310,21 @@ cmd_close() {
 
     echo "[INFO] 部屋 '$name' を閉じます..."
     docker stop "$name" && docker rm "$name"
+
+    # D-15〜D-18: compose project ラベルで兄弟コンテナを検索・削除
+    # --kochou 未使用時も filter クエリを走らせてよい (ヒットしなければ no-op)
+    local _siblings
+    _siblings=$(docker ps -a --filter "label=com.docker.compose.project=${name}" -q 2>/dev/null || true)
+    if [ -n "$_siblings" ]; then
+        local _count
+        _count=$(echo "$_siblings" | wc -l | tr -d ' ')
+        echo "[INFO] 部屋に紐づく compose 兄弟コンテナを ${_count} 件発見 — 削除します"
+        echo "$_siblings" | xargs -r docker rm -f
+        echo "[INFO] 兄弟コンテナ ${_count} 件を削除しました"
+    else
+        echo "[INFO] 兄弟コンテナは見つかりませんでした"
+    fi
+
     echo "[INFO] 完了（workspaceのファイルはフォルダに残っています）"
 }
 
@@ -272,8 +373,8 @@ cmd_auth() {
 
 # ── メイン ───────────────────────────────────────────────────
 case "${1:-}" in
-    open)   cmd_open  "${2:-}" ;;
-    kaio)   cmd_kaio  "${2:-}" ;;
+    open)   cmd_open  "${@:2}" ;;
+    kaio)   cmd_kaio  "${@:2}" ;;
     enter)  cmd_enter "${2:-}" ;;
     list)   cmd_list ;;
     close)  cmd_close "${2:-}" ;;

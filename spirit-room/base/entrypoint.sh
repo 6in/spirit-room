@@ -40,6 +40,9 @@ if ! id goku &>/dev/null; then
     useradd -m -u "$HOST_UID" -g "$HOST_GID" -s /bin/bash -o goku
     echo 'goku:spiritroom' | chpasswd
     echo 'goku ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/goku
+    # D-14: 胡蝶の夢モード (--kochou) env を sudo で preserve する (sudo docker compose で
+    # COMPOSE_PROJECT_NAME が剥がれると spirit-room close の兄弟掃除が効かなくなるため)
+    echo 'Defaults env_keep += "COMPOSE_PROJECT_NAME SPIRIT_ROOM_KOCHOU HOST_WORKSPACE SPIRIT_ROOM_HOST_GATEWAY HOST_DOCKER_GID TZ"' >> /etc/sudoers.d/goku
     chmod 0440 /etc/sudoers.d/goku
     echo "[INFO] goku ユーザーを作成 (UID=$HOST_UID GID=$HOST_GID)"
 else
@@ -56,6 +59,35 @@ else
         echo "[INFO] goku を UID=${HOST_UID} GID=${HOST_GID} に再割り当て完了。続く chown で所有権を再同期します"
     else
         echo "[INFO] goku ユーザーは既に存在 (UID/GID 一致 / skip)"
+    fi
+fi
+
+# ── docker グループ合流 (胡蝶の夢モード / --kochou のみ) ─────
+# D-04〜D-08: SPIRIT_ROOM_KOCHOU=1 時に HOST_DOCKER_GID に対応する
+# グループに goku を追加し、docker.sock を sudo なしで触れるようにする。
+# goku 冪等作成ブロックの直後に実行すること (usermod の前に goku が必要)。
+if [ "${SPIRIT_ROOM_KOCHOU:-}" = "1" ]; then
+    if [ -n "${HOST_DOCKER_GID:-}" ]; then
+        # 既存グループ優先: GID が既にどこかのグループに使われている場合はその名前を使う
+        # (D-07: 名前衝突を避けるため getent で既存グループを先に探し、なければ新規作成する)
+        _dgrp_name=$(getent group "$HOST_DOCKER_GID" 2>/dev/null | cut -d: -f1 || true)
+        if [ -z "$_dgrp_name" ]; then
+            # 既存グループがない → docker という名前で新規作成
+            if groupadd -g "$HOST_DOCKER_GID" docker 2>/dev/null; then
+                _dgrp_name=docker
+            else
+                echo "[WARN] docker グループ (gid=$HOST_DOCKER_GID) の作成に失敗 — sudo docker を使用せよ"
+            fi
+        fi
+        if [ -n "$_dgrp_name" ]; then
+            usermod -aG "$_dgrp_name" goku 2>/dev/null || true
+            echo "[INFO] docker grp: goku ∈ ${_dgrp_name}(gid=${HOST_DOCKER_GID})"
+        else
+            echo "[INFO] docker grp: 合流失敗 — sudo docker を使用せよ (Phase 5 NOPASSWD 前提)"
+        fi
+    else
+        # HOST_DOCKER_GID が空 = stat が失敗した環境 (Mac 等) または --kochou 未指定時の誤起動
+        echo "[INFO] docker grp: HOST_DOCKER_GID 未取得 — sudo docker を使用せよ"
     fi
 fi
 
@@ -180,6 +212,30 @@ if [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then
         touch ~/.profile
         sed -i '/^export CLAUDE_CONFIG_DIR=/d' ~/.profile 2>/dev/null || true
         echo 'export CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR}' >> ~/.profile
+    " || true
+fi
+
+# TZ を goku login shell にも確実に伝える (Dockerfile ENV + /etc/environment で十分なはずだが、
+# docker run -e TZ=... で上書きされた場合に PAM 経路より先に .profile で固めておく)
+su - goku -c "
+    touch ~/.profile
+    sed -i '/^export TZ=/d' ~/.profile 2>/dev/null || true
+    echo 'export TZ=${TZ:-Asia/Tokyo}' >> ~/.profile
+" || true
+
+# D-12: 胡蝶の夢モード (--kochou) env を goku login shell に引き継ぐ (tmux / SSH ログイン後も利用可能にする)
+# catalog.md 側で [ "$SPIRIT_ROOM_KOCHOU" = "1" ] 等で分岐するため必須
+if [ "${SPIRIT_ROOM_KOCHOU:-}" = "1" ]; then
+    su - goku -c "
+        touch ~/.profile
+        sed -i '/^export SPIRIT_ROOM_KOCHOU=/d' ~/.profile 2>/dev/null || true
+        sed -i '/^export HOST_WORKSPACE=/d' ~/.profile 2>/dev/null || true
+        sed -i '/^export SPIRIT_ROOM_HOST_GATEWAY=/d' ~/.profile 2>/dev/null || true
+        sed -i '/^export COMPOSE_PROJECT_NAME=/d' ~/.profile 2>/dev/null || true
+        echo 'export SPIRIT_ROOM_KOCHOU=1' >> ~/.profile
+        echo 'export HOST_WORKSPACE=${HOST_WORKSPACE}' >> ~/.profile
+        echo 'export SPIRIT_ROOM_HOST_GATEWAY=${SPIRIT_ROOM_HOST_GATEWAY:-host.docker.internal}' >> ~/.profile
+        echo 'export COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}' >> ~/.profile
     " || true
 fi
 

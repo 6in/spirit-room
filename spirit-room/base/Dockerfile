@@ -4,6 +4,9 @@ LABEL description="精神と時の部屋 - ベースイメージ"
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NODE_VERSION=20
+# 部屋のタイムゾーンは Asia/Tokyo 固定 (docker run -e TZ=... で上書き可)。
+# /etc/localtime / /etc/environment は下のレイヤーで実体設定する。
+ENV TZ=Asia/Tokyo
 
 # ── レイヤー1: 基本パッケージ ────────────────────────────────
 RUN apt-get update && apt-get install -y \
@@ -12,6 +15,7 @@ RUN apt-get update && apt-get install -y \
     python3 python3-pip python3-venv pipx \
     build-essential \
     sudo \
+    tzdata \
     ca-certificates gnupg \
     jq tree \
     sqlite3 libsqlite3-dev \
@@ -25,6 +29,13 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/fdfind /usr/local/bin/fd \
     && ln -sf /usr/bin/batcat /usr/local/bin/bat
+
+# ── タイムゾーン設定 ─────────────────────────────────────────
+# ENV TZ だけでは su - goku の login shell で引き継がれないため、
+# /etc/localtime と /etc/environment に焼いて PAM login セッションでも有効化する。
+RUN ln -snf "/usr/share/zoneinfo/${TZ}" /etc/localtime \
+    && echo "${TZ}" > /etc/timezone \
+    && echo "TZ=${TZ}" >> /etc/environment
 
 # ── レイヤー1.5: 追加ツール（apt にないもの） ────────────────
 # yq (Go版): apt に古いPython版があるため公式バイナリで導入
@@ -49,6 +60,12 @@ RUN npm install -g @anthropic-ai/claude-code
 
 # ── レイヤー5: opencode ──────────────────────────────────────
 RUN npm install -g opencode-ai
+
+# ── レイヤー5.5: Docker CLI (compose plugin 込み) ─────────────
+# dockerd は起動しない。CLI と compose plugin だけ使う (DooD 用)。
+# --docker フラグ未使用時も常時同梱 (実害: CLI があるだけ。+~100MB)
+RUN curl -fsSL https://get.docker.com | sh \
+    && docker --version
 
 # ── SSH設定 ─────────────────────────────────────────────────
 # root の chpasswd は残す (entrypoint で sudo 経由の管理用途に root を保持するが SSH ログインは禁止)。

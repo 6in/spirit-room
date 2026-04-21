@@ -94,17 +94,17 @@ Plans:
 - [x] 05-02-PLAN.md — entrypoint.sh に HOST_UID 受取 / goku 冪等作成 / chown / kaio symlink chown / goku HOME git config / tmux を su - goku -c でラップ (Wave 2)
 - [x] 05-03-PLAN.md — spirit-room CLI の cmd_open / cmd_kaio / cmd_kaio --rm / cmd_enter に HOST_UID 渡しと goku SSH を反映 (Wave 2)
 
-### Phase 6: spirit-room に --docker フラグを追加して Docker Compose ベースのプロダクトを修行対象にできるようにする
+### Phase 6: spirit-room に --docker フラグを追加して Docker Compose ベースのプロダクトを修行対象にできるようにする ✓ 2026-04-19
 
 **Goal:** `spirit-room open --docker [folder]` で起動した部屋から、Claude が `docker compose up` でホスト上の兄弟コンテナとしてプロダクトを起動・操作できる状態を達成する。DooD (socket マウント) 方式で軽量実装、opt-in のためデフォルト挙動は変えない。compose のボリュームパス解釈問題とサービスへのネットワーク到達問題を catalog.md の指示と環境変数で解決する。
 **Depends on:** Phase 5
 **Plans:** 5 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Dockerfile に docker CLI + compose plugin レイヤー追加 (Wave 1)
-- [ ] 06-02-PLAN.md — entrypoint.sh に docker グループ動的合流ロジック追加 (Wave 1)
-- [ ] 06-03-PLAN.md — catalog.md に Docker Compose モードセクション追加 (Wave 1)
-- [ ] 06-04-PLAN.md — spirit-room CLI に --docker フラグ / _docker_extra_args() / 兄弟掃除追加 (Wave 2)
-- [ ] 06-05-PLAN.md — イメージ再ビルド + E2E 検証 (Wave 3, human-verify)
+- [x] 06-01-PLAN.md — Dockerfile に docker CLI + compose plugin レイヤー追加 (Wave 1)
+- [x] 06-02-PLAN.md — entrypoint.sh に docker グループ動的合流ロジック追加 (Wave 1)
+- [x] 06-03-PLAN.md — catalog.md に Docker Compose モードセクション追加 (Wave 1)
+- [x] 06-04-PLAN.md — spirit-room CLI に --docker フラグ / _docker_extra_args() / 兄弟掃除追加 (Wave 2)
+- [x] 06-05-PLAN.md — イメージ再ビルド + E2E 検証 (Wave 3, human-verify)
 
-参照: `.planning/todos/pending/2026-04-18-spirit-room-docker-docker-compose.md`
+参照: `.planning/todos/completed/2026-04-18-spirit-room-docker-docker-compose.md`
