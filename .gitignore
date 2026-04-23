@@ -21,6 +21,8 @@ Thumbs.db
 # 環境変数
 .env
 .env.*
+# work/ 配下は実験用スクラッチ領域。外側 repo では一切追跡しない
+# (例: work/refactoring-java/ はネストした独立 git repo として管理)
 work/
 
 .claude/worktrees

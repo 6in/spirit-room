@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 06 complete — ready to squash merge to main
-last_updated: "2026-04-19T00:00:00.000Z"
-last_activity: 2026-04-19
+last_updated: "2026-04-21T12:58:37.751Z"
+last_activity: 2026-04-21
 progress:
   total_phases: 6
   completed_phases: 6
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-13)
 Phase: 06 complete
 Plan: 05 complete — all 5 plans done
 Status: ready to squash merge phase/06-spirit-room-docker → main
-Last activity: 2026-04-20 - Completed quick task 260420-q4q: spirit-room open にホスト側 Claude credentials を起動毎に同期する処理を追加 (_sync_host_credentials 関数抽出、open/kaio で共用)
+Last activity: 2026-04-21 - Completed quick task 260421-uiu: work/refactoring-java/ にリファクタリング実験用のダメな Java サンプル (アンチパターン 10 ファイル + Gradle) を作成
 
 Progress: [██████████] 100%
 
@@ -103,6 +103,7 @@ None yet.
 | 260420-j3q | 部屋 & 兄弟コンテナの TZ を Asia/Tokyo に固定 (Dockerfile / entrypoint.sh / CLI / catalog.md) | 2026-04-20 | f273736 | [260420-j3q-asia-tokyo](./quick/260420-j3q-asia-tokyo/) |
 | 260420-ks5 | MR_POPO.md 調査観点に軽量 Docker image variant (-slim / -alpine) 選好指針を追加 (python:2.7→python:2.7-slim で PREPARE 19:30→2:46 の実測根拠) | 2026-04-20 | 4600b70 | [260420-ks5-mr-popo-md-docker-image-variant](./quick/260420-ks5-mr-popo-md-docker-image-variant/) |
 | 260420-q4q | spirit-room open にホスト側 Claude credentials を起動毎に同期する処理を追加 (_sync_host_credentials 関数抽出、open/kaio で共用) | 2026-04-20 | d8ef6c9 | [260420-q4q-spirit-room-open-claude-credentials-sync](./quick/260420-q4q-spirit-room-open-claude-credentials-sync/) |
+| 260421-uiu | work/refactoring-java/ にリファクタリング実験用のダメな Java サンプル (アンチパターン 10 ファイル + Gradle) を作成 | 2026-04-21 | cea45d7 | [260421-uiu-work-refactoring-java-java-10-gradle](./quick/260421-uiu-work-refactoring-java-java-10-gradle/) |
 
 ## Session Continuity
 
