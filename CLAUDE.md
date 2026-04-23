@@ -6,6 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **日本語で応答すること。** ユーザーへのすべての返答は日本語で行う。コード、コマンド、ファイルパスはそのまま英語で記載してよい。
 
+## ユーザーへの質問
+
+**ユーザーに確認・選択・判断を求める質問は `AskUserQuestion` ツールを使うこと。** プレーンテキストで「どうしますか?」「A/B どちらがいいですか?」と垂れ流さない。構造化選択肢 (2〜4 個、必要なら `multiSelect: true`) + `description` で判断材料を添えることで、ユーザーが即座に選べる UX にする。推奨オプションがある場合はラベル末尾に `(推奨)` を付け、先頭に置く。
+ 単なる情報共有や進捗報告は通常のテキストで OK。質問形式を取るときだけ `AskUserQuestion` に切り替える。
+
 ## Project Overview
 
 **精神と時の部屋 (Spirit Room)** — a Docker-based AI training sandbox inspired by Dragon Ball Z. It lets AI agents (Claude Code or opencode) autonomously implement framework POCs inside isolated containers, without manual setup. Users work with "Mr. Popo" (an AI hiring manager in `spirit-room-manager/`) to define a learning mission, which launches a Docker room where the agent runs a 2-phase training loop.
