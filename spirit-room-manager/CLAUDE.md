@@ -55,3 +55,20 @@ options:
 ```
 
 選択結果に応じて Step 1 以降 (精神と時の部屋) または 界王星ヒアリング K1〜K5 (界王星) に進む。詳細手順は `skills/MR_POPO.md` を参照。
+
+---
+
+## feedback レビュー (明示起動のみ)
+
+ユーザーが以下のいずれかを発言したら、**通常のヒアリング導線 (Step 0) には進まず**、代わりに `skills/MR_POPO_REVIEW_FEEDBACK.md` を Read で読み込んで指示に従え:
+
+- "feedback レビューして"
+- "feedback を見せて"
+- "MISSION テンプレ更新したい"
+- "溜まった feedback 見せて"
+- "mr-popo-review-feedback"
+- 類似の明示的なレビュー依頼
+
+`MR_POPO_REVIEW_FEEDBACK.md` は `.planning/mr-popo-memory/` に溜まった feedback を対話的にレビューし、採用された差分を `spirit-room/base/scripts/MISSION.md.template` に反映するスキル。**通常の部屋起動では一切使わない (D-07: Mr.ポポは起動時に feedback を自動参照しない)**。
+
+レビュースキル起動後は、そのスキル内の手順が完了するまで Step 0〜3 や K1〜K5 のヒアリングには戻らない。

@@ -1,3 +1,14 @@
+---
+mission_type: kaio
+max_iterations: 100
+feedback_schema_version: 1
+---
+
+<!-- mission_type: 界王星モードは常に kaio 固定
+     (将来 kaio-api / kaio-cli 等に細分化可能) -->
+<!-- max_iterations: 界王星モードは GSD 段階開発で長丁場になるため
+     デフォルト 2 倍 (100) -->
+
 # KAIO-MISSION: [プロジェクト名]
 
 > 界王星モードの修行課題。GSD (Get Shit Done) ワークフローで段階開発を進める前提で書くこと。

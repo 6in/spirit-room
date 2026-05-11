@@ -108,3 +108,29 @@ Plans:
 - [x] 06-05-PLAN.md — イメージ再ビルド + E2E 検証 (Wave 3, human-verify)
 
 参照: `.planning/todos/completed/2026-04-18-spirit-room-docker-docker-compose.md`
+
+### Phase 7: Mr.ポポ feedback loop (mission template self-improvement) — 部屋の REPORT.md からテンプレ改善提案を抽出し Mr.ポポに取り込む自己進化ループ + MAX_ITERATIONS 安全網 ✓ 2026-04-23
+
+**Goal:** 部屋のトレーニング結果 (REPORT.md) から `MISSION_TEMPLATE_FEEDBACK` を構造化形式で取り出し、Mr.ポポが次回起動時にそれを参照して MISSION.md をより良く書けるようにする自己進化ループを確立する。同時に `start-training.sh` に MAX_ITERATIONS ガードを導入して無限ループを塞ぐことで、監視 UI 投資より先に「指示書の質と安全網」で問題の上流を封じる。
+
+**Requirements**: D-01 〜 D-13 (CONTEXT.md の user decisions を擬似 REQ として参照)
+**Depends on:** Phase 6
+**Plans:** 5 plans
+
+Plans:
+- [x] 07-01-PLAN.md — MISSION.md.template / KAIO-MISSION.md.template / MR_POPO.md に mission_type ヒアリング + frontmatter (Wave 1)
+- [x] 07-02-PLAN.md — create-report.md に MISSION_TEMPLATE_FEEDBACK YAML frontmatter 仕様追加 (Wave 1)
+- [x] 07-03-PLAN.md — start-training.sh に MAX_ITERATIONS ガード + .interrupted + 部分 REPORT.md 生成 (Wave 1)
+- [x] 07-04-PLAN.md — extract-feedback.sh 新設 + PHASE 3 直後フック + .planning/mr-popo-memory/{type}/ 自動蓄積 (Wave 2)
+- [x] 07-05-PLAN.md — MR_POPO_REVIEW_FEEDBACK.md 新規スキル + CLAUDE.md / MR_POPO.md 導線 + applied/ 移動 (Wave 3) ✓ 2026-04-23
+
+**主な要素 (spec/discuss で洗練):**
+1. `start-training.sh` の最終プロンプトを改修し、REPORT.md に `MISSION_TEMPLATE_FEEDBACK` 構造化セクションを吐かせる (mission_type / ambiguous_in_brief / overspecified_in_brief / missing_from_catalog / completion_signal_mismatch / suggested_template_diff)
+2. `start-training.sh` に MAX_ITERATIONS ガード追加
+3. `.planning/mr-popo-memory/` など過去フィードバック蓄積場所を用意
+4. `spirit-room-manager/skills/MR_POPO.md` に「過去 feedback 参照 → テンプレ差分提案 → 人間承認 → 保存」フローを組み込み
+
+**背景:** Quick Task 260421-uiu (Java リファクタ実験) で、既存の 3 問インタビュー + 2 フェーズループが POC 以外のミッションに噛み合わないことが判明。モニタリング強化ではなく指示書の質を継続的に引き上げる方向で解決する設計判断。
+
+参照: `.planning/quick/260421-uiu-work-refactoring-java-java-10-gradle/260421-uiu-SUMMARY.md`
+
